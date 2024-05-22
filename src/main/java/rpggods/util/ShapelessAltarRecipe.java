@@ -1,16 +1,17 @@
 package rpggods.util;
 
 import com.google.gson.JsonObject;
+import net.minecraft.core.NonNullList;
+import net.minecraft.core.RegistryAccess;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.GsonHelper;
 import net.minecraft.world.inventory.CraftingContainer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.CraftingBookCategory;
-import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.ShapelessRecipe;
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.util.GsonHelper;
-import net.minecraft.core.NonNullList;
-import net.minecraft.resources.ResourceLocation;
 import rpggods.RGRegistry;
 import rpggods.RPGGods;
 import rpggods.item.AltarItem;
@@ -41,8 +42,8 @@ public class ShapelessAltarRecipe extends ShapelessRecipe {
      * Returns an Item that is the result of this recipe
      */
     @Override
-    public ItemStack assemble(CraftingContainer inv) {
-        final ItemStack result = super.assemble(inv);
+    public ItemStack assemble(CraftingContainer inv, RegistryAccess registryAccess) {
+        final ItemStack result = super.assemble(inv, registryAccess);
         if(getAltarId().isPresent()) {
             result.getOrCreateTag().putString(AltarItem.KEY_ALTAR, getAltarId().get().toString());
         }
@@ -66,14 +67,14 @@ public class ShapelessAltarRecipe extends ShapelessRecipe {
             final ShapelessRecipe recipe = super.fromJson(recipeId, json);
             final String sAltarId = GsonHelper.getAsString(json, AltarItem.KEY_ALTAR, "");
             if(sAltarId.isEmpty()) {
-                return new ShapelessAltarRecipe(recipeId, recipe.getResultItem(), Optional.empty(), recipe.getIngredients());
+                return new ShapelessAltarRecipe(recipeId, recipe.getResultItem(null), Optional.empty(), recipe.getIngredients());
             }
             // attempt to read resource location
             ResourceLocation altarId = ResourceLocation.tryParse(sAltarId);
             if (null == altarId) {
                 RPGGods.LOGGER.error("Failed to parse altar ID \"" + sAltarId + "\" in recipe with id " + recipeId);
             }
-            return new ShapelessAltarRecipe(recipeId, recipe.getResultItem(), Optional.ofNullable(altarId), recipe.getIngredients());
+            return new ShapelessAltarRecipe(recipeId, recipe.getResultItem(null), Optional.ofNullable(altarId), recipe.getIngredients());
         }
 
         @Override
@@ -84,7 +85,7 @@ public class ShapelessAltarRecipe extends ShapelessRecipe {
             if(hasAltar) {
                 altarId = buffer.readResourceLocation();
             }
-            return new ShapelessAltarRecipe(recipeId, recipe.getResultItem(), Optional.ofNullable(altarId), recipe.getIngredients());
+            return new ShapelessAltarRecipe(recipeId, recipe.getResultItem(null), Optional.ofNullable(altarId), recipe.getIngredients());
         }
 
         @Override

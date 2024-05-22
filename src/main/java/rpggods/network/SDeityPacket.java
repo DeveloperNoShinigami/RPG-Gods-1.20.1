@@ -44,7 +44,7 @@ public class SDeityPacket {
      * @return a new instance of a SDeityPacket based on the PacketBuffer
      */
     public static SDeityPacket fromBytes(final FriendlyByteBuf buf) {
-        final Map<ResourceLocation, Deity> data = buf.readWithCodec(CODEC);
+        final Map<ResourceLocation, Deity> data = buf.readJsonWithCodec(CODEC);
         return new SDeityPacket(data);
     }
 
@@ -55,7 +55,7 @@ public class SDeityPacket {
      * @param buf the PacketBuffer
      */
     public static void toBytes(final SDeityPacket msg, final FriendlyByteBuf buf) {
-        buf.writeWithCodec(CODEC, msg.data);
+        buf.writeJsonWithCodec(CODEC, msg.data);
     }
 
     /**

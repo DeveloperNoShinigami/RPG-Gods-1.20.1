@@ -1,32 +1,27 @@
 package rpggods.client.screen;
 
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.math.Quaternion;
-import com.mojang.math.Vector3f;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.components.events.GuiEventListener;
-import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
-import net.minecraft.client.gui.components.AbstractSliderButton;
-import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.renderer.MultiBufferSource;
 import com.mojang.blaze3d.platform.Lighting;
-import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.AbstractSliderButton;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.gui.screens.inventory.InventoryScreen;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.Mth;
-import net.minecraft.network.chat.Component;
 import rpggods.RPGGods;
-import rpggods.util.altar.AltarPose;
-import rpggods.util.altar.HumanoidPart;
 import rpggods.data.deity.Altar;
 import rpggods.entity.AltarEntity;
 import rpggods.menu.AltarContainerMenu;
 import rpggods.network.CUpdateAltarPacket;
+import rpggods.util.altar.AltarPose;
+import rpggods.util.altar.HumanoidPart;
 
 import java.util.Optional;
 
@@ -172,19 +167,19 @@ public class AltarScreen extends AbstractContainerScreen<AltarContainerMenu> {
         // add sliders
         this.sliderAngleX = (new AltarScreen.AngleSlider(this.leftPos + SLIDER_X, this.topPos + SLIDER_Y, "X") {
             @Override
-            void setAngleValue(double angRadians) { AltarScreen.this.pose.get(AltarScreen.this.selectedPart).setX((float)angRadians); }
+            void setAngleValue(double angRadians) { AltarScreen.this.pose.get(AltarScreen.this.selectedPart).setComponent(0, (float)angRadians); }
             @Override
             double getAngleValue() { return Math.toDegrees(AltarScreen.this.pose.get(AltarScreen.this.selectedPart).x()); }
         });
         this.sliderAngleY = (new AltarScreen.AngleSlider(this.leftPos + SLIDER_X, this.topPos + SLIDER_Y + (SLIDER_HEIGHT + SLIDER_SPACING), "Y") {
             @Override
-            void setAngleValue(double angRadians) { AltarScreen.this.pose.get(AltarScreen.this.selectedPart).setY((float)angRadians); }
+            void setAngleValue(double angRadians) { AltarScreen.this.pose.get(AltarScreen.this.selectedPart).setComponent(1, (float)angRadians); }
             @Override
             double getAngleValue() { return Math.toDegrees(AltarScreen.this.pose.get(AltarScreen.this.selectedPart).y()); }
         });
         this.sliderAngleZ = (new AltarScreen.AngleSlider(this.leftPos + SLIDER_X, this.topPos + SLIDER_Y + 2 * (SLIDER_HEIGHT + SLIDER_SPACING), "Z") {
             @Override
-            void setAngleValue(double angRadians) { AltarScreen.this.pose.get(AltarScreen.this.selectedPart).setZ((float)angRadians); }
+            void setAngleValue(double angRadians) { AltarScreen.this.pose.get(AltarScreen.this.selectedPart).setComponent(2, (float)angRadians); }
             @Override
             double getAngleValue() { return Math.toDegrees(AltarScreen.this.pose.get(AltarScreen.this.selectedPart).z()); }
         });
@@ -192,7 +187,6 @@ public class AltarScreen extends AbstractContainerScreen<AltarContainerMenu> {
         this.addRenderableWidget(sliderAngleY);
         this.addRenderableWidget(sliderAngleZ);
         // items tab
-        this.minecraft.keyboardHandler.setSendRepeatsToGui(true);
         int i = (this.width - this.imageWidth) / 2;
         int j = (this.height - this.imageHeight) / 2;
         this.nameField = new EditBox(this.font, this.leftPos + TEXT_X, this.topPos + TEXT_Y, TEXT_WIDTH, TEXT_HEIGHT, Component.translatable("gui.altar.name"));
@@ -211,47 +205,51 @@ public class AltarScreen extends AbstractContainerScreen<AltarContainerMenu> {
     }
 
     @Override
-    protected void renderBg(PoseStack matrixStack, float partialTicks, int mouseX, int mouseY) {
-        this.renderBackground(matrixStack);
+    protected void renderBg(GuiGraphics guiGraphics, float partialTicks, int mouseX, int mouseY) {
+        this.renderBackground(guiGraphics);
         Lighting.setupForFlatItems();
         // draw background
-        RenderSystem.setShaderTexture(0, SCREEN_TEXTURE);
-        this.blit(matrixStack, this.leftPos, this.topPos, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+        guiGraphics.blit(SCREEN_TEXTURE, this.leftPos, this.topPos, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
         // draw item slots
         if(this.tabIndex == 1) {
             // slots on texture are at 31, 119
             for(int i = 0, l = getMenu().getAltarSlots().size(); i < l; i++) {
                 Slot slot = getMenu().getAltarSlots().get(i);
-                this.blit(matrixStack, this.leftPos + slot.x - 1, this.topPos + slot.y - 1,
+                guiGraphics.blit(SCREEN_TEXTURE, this.leftPos + slot.x - 1, this.topPos + slot.y - 1,
                         AltarContainerMenu.PLAYER_INV_X - 1, AltarContainerMenu.PLAYER_INV_Y - 1, 18, 18);
                 // render slab icon on last slot
                 if(i == l - 1 && slot.getItem().isEmpty()) {
-                    this.blit(matrixStack, this.leftPos + slot.x, this.topPos + slot.y,
+                    guiGraphics.blit(SCREEN_TEXTURE, this.leftPos + slot.x, this.topPos + slot.y,
                             48, 202, 16, 16);
                 }
             }
         }
         // draw preview pane
-        RenderSystem.setShaderTexture(0, SCREEN_WIDGETS);
-        this.blit(matrixStack, this.leftPos + PREVIEW_X, this.topPos + PREVIEW_Y, 168, 130, PREVIEW_WIDTH, PREVIEW_HEIGHT);
+        guiGraphics.blit(SCREEN_WIDGETS, this.leftPos + PREVIEW_X, this.topPos + PREVIEW_Y, 168, 130, PREVIEW_WIDTH, PREVIEW_HEIGHT);
     }
 
     @Override
-    public void render(PoseStack matrixStack, int mouseX, int mouseY, float partialTicks) {
-        super.render(matrixStack, mouseX, mouseY, partialTicks);
+    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
+        super.render(guiGraphics, mouseX, mouseY, partialTicks);
         // draw entity preview
-        drawEntityOnScreen(matrixStack, this.leftPos + PREVIEW_X + PREVIEW_WIDTH / 2, this.topPos + PREVIEW_Y + PREVIEW_HEIGHT, mouseX, mouseY, partialTicks);
+        int margin = 12;
+        int scale = PREVIEW_WIDTH - margin * 2;
+        // preview client-side tile entity information
+        updateAltarEntity(menu.getEntity());
+        InventoryScreen.renderEntityInInventoryFollowsMouse(guiGraphics, this.leftPos + PREVIEW_X + PREVIEW_WIDTH / 2, this.topPos + PREVIEW_Y + PREVIEW_HEIGHT, scale, mouseX, mouseY, menu.getEntity());
         // draw text box
-        this.nameField.render(matrixStack, mouseX, mouseY, partialTicks);
+        // TODO why do we need to render this again?
+        this.nameField.render(guiGraphics, mouseX, mouseY, partialTicks);
         // draw hovering text LAST
-        for(GuiEventListener w : this.children()) {
+        // TODO reword tooltips
+/*        for(GuiEventListener w : this.children()) {
             if(w instanceof Button b && b.visible && b.isHoveredOrFocused()) {
                 matrixStack.pushPose();
                 b.renderToolTip(matrixStack, mouseX, mouseY);
                 matrixStack.popPose();
             }
-        }
-        this.renderTooltip(matrixStack, mouseX, mouseY);
+        }*/
+        this.renderTooltip(guiGraphics, mouseX, mouseY);
     }
 
     @Override
@@ -262,7 +260,6 @@ public class AltarScreen extends AbstractContainerScreen<AltarContainerMenu> {
     @Override
     public void removed() {
         super.removed();
-        this.minecraft.keyboardHandler.setSendRepeatsToGui(false);
         this.menu.setChanged();
         // send update packet to server
         RPGGods.CHANNEL.sendToServer(new CUpdateAltarPacket(this.menu.getEntity().getId(), this.pose, this.female, this.slim, this.name.orElse("")));
@@ -322,47 +319,6 @@ public class AltarScreen extends AbstractContainerScreen<AltarContainerMenu> {
         }
     }
 
-    @SuppressWarnings("deprecation")
-    public void drawEntityOnScreen(final PoseStack matrixStackIn, final int posX, final int posY,
-                                       final float mouseX, final float mouseY, final float partialTicks) {
-        float margin = 12;
-        float scale = PREVIEW_WIDTH - margin * 2;
-        float rotX = (float) Math.atan((double) ((mouseX - this.leftPos) / 40.0F));
-        float rotY = (float) Math.atan((double) ((mouseY - this.topPos - PREVIEW_HEIGHT / 2) / 40.0F));
-        // preview client-side tile entity information
-        updateAltarEntity(menu.getEntity());
-
-        // Render the Entity with given scale
-        PoseStack posestack = RenderSystem.getModelViewStack();
-        posestack.pushPose();
-        posestack.translate((double)posX, (double)posY, 1050.0D);
-        posestack.scale(1.0F, 1.0F, -1.0F);
-        RenderSystem.applyModelViewMatrix();
-        PoseStack posestack1 = new PoseStack();
-        posestack1.translate(0.0D, 0.0D, 1000.0D);
-        posestack1.scale(scale, scale, scale);
-        Quaternion quaternion = Vector3f.YP.rotationDegrees(rotX * -15.0F + 180.0F - menu.getEntity().getYRot()); // was 180.0F
-        Quaternion quaternion1 = Vector3f.XP.rotationDegrees(rotY * -15.0F);
-        Quaternion quaternion2 = Vector3f.ZP.rotationDegrees(180.0F);
-        quaternion.mul(quaternion1);
-        quaternion.mul(quaternion2);
-        posestack1.mulPose(quaternion);
-        Lighting.setupForEntityInInventory();
-        EntityRenderDispatcher entityrenderdispatcher = Minecraft.getInstance().getEntityRenderDispatcher();
-        quaternion1.conj();
-        entityrenderdispatcher.overrideCameraOrientation(quaternion1);
-        entityrenderdispatcher.setRenderShadow(false);
-        MultiBufferSource.BufferSource multibuffersource$buffersource = Minecraft.getInstance().renderBuffers().bufferSource();
-        RenderSystem.runAsFancy(() -> {
-            entityrenderdispatcher.render(menu.getEntity(), 0.0D, 0.0D, 0.0D, 0.0F, 1.0F, posestack1, multibuffersource$buffersource, 15728880);
-        });
-        multibuffersource$buffersource.endBatch();
-        entityrenderdispatcher.setRenderShadow(true);
-        posestack.popPose();
-        RenderSystem.applyModelViewMatrix();
-        Lighting.setupFor3DItems();
-    }
-
     /**
      * Updates the client-side model for rendering in the GUI only.
      * Does not send anything to the server.
@@ -387,25 +343,21 @@ public class AltarScreen extends AbstractContainerScreen<AltarContainerMenu> {
         private ItemStack item = ItemStack.EMPTY;
 
         public TabButton(final AltarScreen screenIn, final int index, final Component title, final int x, final int y, ItemStack item) {
-            super(x, y, TAB_WIDTH, TAB_HEIGHT, title, b -> screenIn.updateTab(index),
-                    (b, m, bx, by) -> screenIn.renderTooltip(m, b.getMessage(), bx, by));
+            super(x, y, TAB_WIDTH, TAB_HEIGHT, title, b -> screenIn.updateTab(index), Button.DEFAULT_NARRATION);
             this.index = index;
             this.item = item;
             this.setMessage(title);
         }
 
         @Override
-        public void renderButton(PoseStack matrixStack, int mouseX, int mouseY, float partialTicks) {
-            if(this.visible) {
-                int selected = isSelected() ? 0 : 2;
-                final int xOffset = (index % TAB_COUNT) * TAB_WIDTH;
-                final int yOffset = isSelected() ? this.height : 2;
-                // draw button background
-                RenderSystem.setShaderTexture(0, SCREEN_WIDGETS);
-                this.blit(matrixStack, this.x, this.y - selected, xOffset, yOffset - selected, this.width, this.height - selected);
-                // draw item
-                AltarScreen.this.itemRenderer.renderGuiItem(item, this.x + (this.width - 16) / 2, this.y + (this.height - 16) / 2);
-            }
+        public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
+            int selected = isSelected() ? 0 : 2;
+            final int xOffset = (index % TAB_COUNT) * TAB_WIDTH;
+            final int yOffset = isSelected() ? this.height : 2;
+            // draw button background
+            guiGraphics.blit(SCREEN_WIDGETS, this.getX(), this.getY() - selected, xOffset, yOffset - selected, this.width, this.height - selected);
+            // draw item
+            guiGraphics.renderFakeItem(item, this.getX() + (this.width - 16) / 2, this.getY() + (this.height - 16) / 2);
         }
 
         public boolean isSelected() {
@@ -417,19 +369,16 @@ public class AltarScreen extends AbstractContainerScreen<AltarContainerMenu> {
     protected class PartButton extends Button {
 
         public PartButton(final AltarScreen screenIn, final int x, final int y, final Component title, final OnPress pressedAction) {
-            super(x, y, PART_WIDTH, PART_HEIGHT, title, pressedAction);
+            super(x, y, PART_WIDTH, PART_HEIGHT, title, pressedAction, Button.DEFAULT_NARRATION);
         }
 
         @Override
-        public void renderButton(PoseStack matrixStack, int mouseX, int mouseY, float partialTicks) {
-            if (this.visible) {
-                final boolean selected = isHoveredOrFocused();
-                final int xOffset = 25;
-                final int yOffset = 130 + (selected ? this.height : 0);
-                RenderSystem.setShaderTexture(0, SCREEN_WIDGETS);
-                this.blit(matrixStack, this.x, this.y, xOffset, yOffset, this.width, this.height);
-                drawCenteredString(matrixStack, AltarScreen.this.font, this.getMessage(), this.x + this.width / 2, this.y + (this.height - 8) / 2, getFGColor() | Mth.ceil(this.alpha * 255.0F) << 24);
-            }
+        public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
+            final boolean selected = isHoveredOrFocused();
+            final int xOffset = 25;
+            final int yOffset = 130 + (selected ? this.height : 0);
+            guiGraphics.blit(SCREEN_WIDGETS, this.getX(), this.getY(), xOffset, yOffset, this.width, this.height);
+            guiGraphics.drawCenteredString(AltarScreen.this.font, this.getMessage(), this.getX() + this.width / 2, this.getY() + (this.height - 8) / 2, getFGColor() | Mth.ceil(this.alpha * 255.0F) << 24);
         }
     }
 
@@ -440,24 +389,21 @@ public class AltarScreen extends AbstractContainerScreen<AltarContainerMenu> {
 
         public IconButton(final AltarScreen screenIn, final int x, final int y, final int tX, final int tY,
                           final Component title, final OnPress pressedAction) {
-            super(x, y, ICON_WIDTH, ICON_HEIGHT, Component.empty(), pressedAction,
-                    (b, m, bx, by) -> screenIn.renderTooltip(m, screenIn.minecraft.font.split(title, Math.max(screenIn.width / 2 - 43, 170)), bx, by));
+            super(x, y, ICON_WIDTH, ICON_HEIGHT, title, pressedAction, Button.DEFAULT_NARRATION);
+            // TODO render tooltip lines
+            // (b, m, bx, by) -> screenIn.renderTooltip(m, screenIn.minecraft.font.split(title, Math.max(screenIn.width / 2 - 43, 170)), bx, by)
             this.textureX = tX;
             this.textureY = tY;
         }
 
         @Override
-        public void renderButton(PoseStack matrixStack, int mouseX, int mouseY, float partialTicks) {
-            if (this.visible) {
-                int xOffset = 97;
-                int yOffset = 130 + (this.isHoveredOrFocused() ? this.height : 0);
-                // draw button background
-                RenderSystem.setShaderTexture(0, SCREEN_WIDGETS);
-                this.blit(matrixStack, this.x, this.y, xOffset, yOffset, this.width, this.height);
-                // draw button icon
-                RenderSystem.setShaderTexture(0, SCREEN_TEXTURE);
-                this.blit(matrixStack, this.x, this.y, getIconX(), getIconY(), this.width, this.height);
-            }
+        public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
+            int xOffset = 97;
+            int yOffset = 130 + (this.isHoveredOrFocused() ? this.height : 0);
+            // draw button background
+            guiGraphics.blit(SCREEN_WIDGETS, this.getX(), this.getY(), xOffset, yOffset, this.width, this.height);
+            // draw button icon
+            guiGraphics.blit(SCREEN_TEXTURE, this.getX(), this.getY(), getIconX(), getIconY(), this.width, this.height);
         }
 
         public int getIconX() {
@@ -480,11 +426,13 @@ public class AltarScreen extends AbstractContainerScreen<AltarContainerMenu> {
         }
 
         // called when the value is changed
+        @Override
         protected void updateMessage() {
             this.setMessage(Component.translatable("gui.altar.rotation", rotationName, Math.round(getAngleValue())));
         }
 
         // called when the value is changed and is different from its previous value
+        @Override
         protected void applyValue() {
             setAngleValue(Math.toRadians((this.value - 0.5D) * getAngleBounds()));
         }

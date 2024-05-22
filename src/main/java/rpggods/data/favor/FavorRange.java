@@ -2,8 +2,8 @@ package rpggods.data.favor;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
 import rpggods.RPGGods;
 
 import java.util.Objects;

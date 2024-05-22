@@ -3,6 +3,7 @@ package rpggods.client.entity;
 import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.math.Axis;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.model.geom.PartPose;
@@ -13,9 +14,9 @@ import net.minecraft.client.model.geom.builders.MeshDefinition;
 import net.minecraft.client.model.geom.builders.PartDefinition;
 import net.minecraft.world.entity.HumanoidArm;
 import org.joml.Vector3f;
+import rpggods.entity.AltarEntity;
 import rpggods.util.altar.AltarPose;
 import rpggods.util.altar.HumanoidPart;
-import rpggods.entity.AltarEntity;
 
 import java.util.Collection;
 import java.util.EnumMap;
@@ -120,13 +121,13 @@ public class AltarModel extends AltarArmorModel {
         matrixStackIn.translate(bodyTranslation.x() * scale, bodyTranslation.y() * scale, bodyTranslation.z() * scale);
         // rotate entire model around body rotations
         if (bodyRotation.z() != 0.0F) {
-            matrixStackIn.mulPose(Vector3f.ZP.rotation(bodyRotation.z()));
+            matrixStackIn.mulPose(Axis.ZP.rotation(bodyRotation.z()));
         }
         if (bodyRotation.y() != 0.0F) {
-            matrixStackIn.mulPose(Vector3f.YP.rotation(bodyRotation.y()));
+            matrixStackIn.mulPose(Axis.YP.rotation(bodyRotation.y()));
         }
         if (bodyRotation.x() != 0.0F) {
-            matrixStackIn.mulPose(Vector3f.XP.rotation(bodyRotation.x()));
+            matrixStackIn.mulPose(Axis.XP.rotation(bodyRotation.x()));
         }
     }
 

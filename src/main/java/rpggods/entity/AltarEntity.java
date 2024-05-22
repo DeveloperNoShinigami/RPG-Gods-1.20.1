@@ -62,7 +62,7 @@ import rpggods.data.deity.Deity;
 import rpggods.data.deity.DeityWrapper;
 import rpggods.data.favor.Favor;
 import rpggods.data.favor.IFavor;
-import rpggods.data.perk.PerkCondition;
+import rpggods.data.perk.condition.PerkCondition;
 import rpggods.item.AltarItem;
 import rpggods.menu.AltarContainerMenu;
 import rpggods.menu.FavorContainerMenu;

@@ -44,7 +44,7 @@ public class SAltarPacket {
      * @return a new instance of a SAltarPacket based on the PacketBuffer
      */
     public static SAltarPacket fromBytes(final FriendlyByteBuf buf) {
-        final Map<ResourceLocation, Altar> data = buf.readWithCodec(CODEC);
+        final Map<ResourceLocation, Altar> data = buf.readJsonWithCodec(CODEC);
         return new SAltarPacket(data);
     }
 
@@ -55,7 +55,7 @@ public class SAltarPacket {
      * @param buf the PacketBuffer
      */
     public static void toBytes(final SAltarPacket msg, final FriendlyByteBuf buf) {
-        buf.writeWithCodec(CODEC, msg.data);
+        buf.writeJsonWithCodec(CODEC, msg.data);
     }
 
     /**

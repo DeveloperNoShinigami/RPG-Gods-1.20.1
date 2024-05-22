@@ -13,13 +13,13 @@ import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.network.PacketDistributor;
-import rpggods.entity.AltarEntity;
 import rpggods.data.favor.Favor;
 import rpggods.data.favor.FavorCommand;
 import rpggods.data.favor.IFavor;
-import rpggods.network.SUpdateAltarPacket;
 import rpggods.data.tameable.ITameable;
 import rpggods.data.tameable.Tameable;
+import rpggods.entity.AltarEntity;
+import rpggods.network.SUpdateAltarPacket;
 
 public final class RGData {
 

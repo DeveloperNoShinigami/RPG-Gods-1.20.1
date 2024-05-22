@@ -1,4 +1,4 @@
-package rpggods.data.perk;
+package rpggods.data.perk.condition;
 
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.serialization.Codec;
@@ -36,14 +36,16 @@ import net.minecraftforge.registries.ForgeRegistries;
 import rpggods.RGEvents;
 import rpggods.RPGGods;
 import rpggods.data.deity.Altar;
-import rpggods.entity.AltarEntity;
 import rpggods.data.favor.IFavor;
+import rpggods.entity.AltarEntity;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 public final class PerkCondition {
+
+    // TODO dispatch codec for PerkCondition
 
     public static final Codec<PerkCondition> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             PerkCondition.Type.CODEC.fieldOf("type").forGetter(PerkCondition::getType),

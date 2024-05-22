@@ -1,14 +1,14 @@
 package rpggods.client.blockentity;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.math.Vector3f;
+import com.mojang.math.Axis;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.block.model.ItemTransforms;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.util.Mth;
+import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import rpggods.block.entity.BrazierBlockEntity;
 
@@ -33,10 +33,10 @@ public class BrazierBlockEntityRenderer implements BlockEntityRenderer<BrazierBl
             final float offsetY = 0.065F * Mth.cos(ticks * speed);
             poseStack.translate(0.5D, 0.95D + offsetY, 0.5D);
             poseStack.scale(scale, scale, scale);
-            poseStack.mulPose(Vector3f.YP.rotation(ticks * speed * Mth.PI * 0.125F));
+            poseStack.mulPose(Axis.YP.rotation(ticks * speed * Mth.PI * 0.125F));
             // render the item stack
-            Minecraft.getInstance().getItemRenderer().renderStatic(itemstack, ItemTransforms.TransformType.GROUND, packedLight,
-                    OverlayTexture.NO_OVERLAY, poseStack, bufferSource, 0);
+            Minecraft.getInstance().getItemRenderer().renderStatic(itemstack, ItemDisplayContext.GROUND, packedLight,
+                    OverlayTexture.NO_OVERLAY, poseStack, bufferSource, blockEntity.getLevel(), 0);
             // finish rendering
             poseStack.popPose();
         }

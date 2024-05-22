@@ -1,17 +1,17 @@
 package rpggods.data.favor;
 
 import com.google.common.collect.Iterables;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.common.util.INBTSerializable;
 import rpggods.RPGGods;
+import rpggods.data.deity.Cooldown;
 import rpggods.data.deity.Offering;
 import rpggods.data.deity.Sacrifice;
-import rpggods.util.FavorChangedEvent;
-import rpggods.data.deity.Cooldown;
 import rpggods.data.perk.Patron;
+import rpggods.util.FavorChangedEvent;
 
 import java.util.Map;
 import java.util.Map.Entry;

@@ -5,7 +5,7 @@ import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.resources.ResourceLocation;
-import rpggods.data.perk.PerkCondition;
+import rpggods.data.perk.condition.PerkCondition;
 
 import java.util.List;
 import java.util.Optional;

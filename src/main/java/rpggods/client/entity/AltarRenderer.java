@@ -4,31 +4,31 @@ import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.minecraft.MinecraftProfileTexture;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import net.minecraft.client.model.geom.ModelLayerLocation;
-import net.minecraft.client.renderer.entity.EntityRendererProvider;
-import net.minecraft.world.level.block.Block;
+import com.mojang.math.Axis;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.model.geom.ModelLayerLocation;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
-import net.minecraft.client.renderer.entity.layers.HumanoidArmorLayer;
-import net.minecraft.client.renderer.entity.layers.ElytraLayer;
 import net.minecraft.client.renderer.entity.layers.CustomHeadLayer;
+import net.minecraft.client.renderer.entity.layers.ElytraLayer;
+import net.minecraft.client.renderer.entity.layers.HumanoidArmorLayer;
 import net.minecraft.client.renderer.entity.layers.ItemInHandLayer;
 import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.phys.Vec3;
-import com.mojang.math.Vector3f;
 import net.minecraftforge.client.event.RenderLivingEvent;
 import net.minecraftforge.client.model.data.ModelData;
 import net.minecraftforge.common.MinecraftForge;
 import rpggods.RPGGods;
-import rpggods.util.altar.AltarPose;
-import rpggods.util.altar.HumanoidPart;
 import rpggods.client.screen.AltarScreen;
 import rpggods.entity.AltarEntity;
+import rpggods.util.altar.AltarPose;
+import rpggods.util.altar.HumanoidPart;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -48,7 +48,7 @@ public class AltarRenderer extends LivingEntityRenderer<AltarEntity, AltarModel>
         super(context, new AltarModel(context.bakeLayer(ALTAR_MODEL_RESOURCE)), 0.5F);
         this.addLayer(new HumanoidArmorLayer<>(this,
                 new AltarArmorModel(context.bakeLayer(ALTAR_INNER_ARMOR_RESOURCE)),
-                new AltarArmorModel(context.bakeLayer(ALTAR_OUTER_ARMOR_RESOURCE))));
+                new AltarArmorModel(context.bakeLayer(ALTAR_OUTER_ARMOR_RESOURCE)), context.getModelManager()));
         this.addLayer(new ItemInHandLayer<>(this, context.getItemInHandRenderer()));
         this.addLayer(new ElytraLayer<>(this, context.getModelSet()));
         this.addLayer(new CustomHeadLayer<>(this, context.getModelSet(), context.getItemInHandRenderer()));
@@ -64,7 +64,7 @@ public class AltarRenderer extends LivingEntityRenderer<AltarEntity, AltarModel>
         }
         poseStack.pushPose();
         // rotate around entity body rotation
-        poseStack.mulPose(Vector3f.YN.rotationDegrees(entityIn.yBodyRot));
+        poseStack.mulPose(Axis.YN.rotationDegrees(entityIn.yBodyRot));
 
         // render base
         float baseHeight = -0.5F;
@@ -84,7 +84,7 @@ public class AltarRenderer extends LivingEntityRenderer<AltarEntity, AltarModel>
         // prepare to render model
         AltarPose pose = entityIn.getAltarPose();
         getModel().young = false;
-        getModel().setupAnim(entityIn, entityIn.animationPosition, entityIn.animationSpeed, entityIn.tickCount, entityIn.getYHeadRot(), entityIn.getViewXRot(partialTicks));
+        getModel().setupAnim(entityIn, entityIn.walkAnimation.position(partialTicks), entityIn.walkAnimation.speed(partialTicks), entityIn.tickCount, entityIn.getYHeadRot(), entityIn.getViewXRot(partialTicks));
 
         // determine render type
         Minecraft minecraft = Minecraft.getInstance();
@@ -97,7 +97,7 @@ public class AltarRenderer extends LivingEntityRenderer<AltarEntity, AltarModel>
         getModel().translateRotateAroundBody(pose.get(HumanoidPart.ROOT), pose.get(HumanoidPart.BODY), poseStack, partialTicks);
         // translate and rotate so the model is not upside-down
         poseStack.translate(0.0F, 2.0F + baseHeight, 0.0F);
-        poseStack.mulPose(Vector3f.XP.rotationDegrees(180.0F));
+        poseStack.mulPose(Axis.XP.rotationDegrees(180.0F));
         if (rendertype != null) {
             VertexConsumer ivertexbuilder = bufferIn.getBuffer(rendertype);
             getModel().render(entityIn, poseStack, ivertexbuilder, packedLightIn, OverlayTexture.NO_OVERLAY,
@@ -106,8 +106,8 @@ public class AltarRenderer extends LivingEntityRenderer<AltarEntity, AltarModel>
 
         // render layers
         if (!entityIn.isSpectator()) {
-            for(RenderLayer layerrenderer : this.layers) {
-                layerrenderer.render(poseStack, bufferIn, packedLightIn, entityIn, entityIn.animationPosition, entityIn.animationSpeed, partialTicks, entityIn.tickCount, entityIn.getYHeadRot(), entityIn.getViewXRot(partialTicks));
+            for(var layerrenderer : this.layers) {
+                layerrenderer.render(poseStack, bufferIn, packedLightIn, entityIn, entityIn.walkAnimation.position(partialTicks), entityIn.walkAnimation.speed(partialTicks), partialTicks, entityIn.tickCount, entityIn.getYHeadRot(), entityIn.getViewXRot(partialTicks));
             }
         }
         poseStack.popPose();

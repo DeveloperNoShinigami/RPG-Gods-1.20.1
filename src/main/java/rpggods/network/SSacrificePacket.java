@@ -44,7 +44,7 @@ public class SSacrificePacket {
      * @return a new instance of a SSacrificePacket based on the PacketBuffer
      */
     public static SSacrificePacket fromBytes(final FriendlyByteBuf buf) {
-        final Map<ResourceLocation, Sacrifice> data = buf.readWithCodec(CODEC);
+        final Map<ResourceLocation, Sacrifice> data = buf.readJsonWithCodec(CODEC);
         return new SSacrificePacket(data);
     }
 
@@ -55,7 +55,7 @@ public class SSacrificePacket {
      * @param buf the PacketBuffer
      */
     public static void toBytes(final SSacrificePacket msg, final FriendlyByteBuf buf) {
-        buf.writeWithCodec(CODEC, msg.data);
+        buf.writeJsonWithCodec(CODEC, msg.data);
     }
 
     /**

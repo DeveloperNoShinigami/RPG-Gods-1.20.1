@@ -32,13 +32,13 @@ import rpggods.data.deity.Deity;
 import rpggods.data.deity.DeityWrapper;
 import rpggods.data.deity.Offering;
 import rpggods.data.deity.Sacrifice;
-import rpggods.entity.AltarEntity;
 import rpggods.data.favor.FavorLevel;
 import rpggods.data.favor.IFavor;
-import rpggods.menu.FavorContainerMenu;
 import rpggods.data.perk.Perk;
-import rpggods.data.perk.PerkAction;
-import rpggods.data.perk.PerkCondition;
+import rpggods.data.perk.action.PerkAction;
+import rpggods.data.perk.condition.PerkCondition;
+import rpggods.entity.AltarEntity;
+import rpggods.menu.FavorContainerMenu;
 
 import java.util.ArrayList;
 import java.util.Collection;

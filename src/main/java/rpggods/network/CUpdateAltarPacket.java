@@ -1,15 +1,14 @@
 package rpggods.network;
 
-import net.minecraft.network.chat.Component;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.common.ForgeMod;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
 import net.minecraftforge.fml.LogicalSide;
 import net.minecraftforge.network.NetworkEvent;
-import rpggods.util.altar.AltarPose;
 import rpggods.entity.AltarEntity;
+import rpggods.util.altar.AltarPose;
 
 import java.util.function.Supplier;
 
@@ -90,11 +89,10 @@ public class CUpdateAltarPacket {
         if (context.getDirection().getReceptionSide() == LogicalSide.SERVER) {
             context.enqueueWork(() -> {
                 final ServerPlayer player = context.getSender();
-                Entity entity = context.getSender().getCommandSenderWorld().getEntity(message.entityId);
+                Entity entity = context.getSender().level().getEntity(message.entityId);
                 double maxDistance = player.getEntityReach();
-                if (entity != null && entity instanceof AltarEntity && player.distanceToSqr(entity) < Math.pow(maxDistance, 2)) {
+                if (entity != null && entity instanceof AltarEntity altar && player.position().closerThan(entity.position(), maxDistance)) {
                     // update pose and name
-                    AltarEntity altar = (AltarEntity) entity;
                     altar.setAltarPose(message.pose);
                     if (message.customName != null && !message.customName.isEmpty()) {
                         altar.setCustomName(Component.literal(message.customName));

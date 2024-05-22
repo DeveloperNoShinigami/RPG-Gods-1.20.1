@@ -44,7 +44,7 @@ public class SPerkPacket {
      * @return a new instance of a SPerkPacket based on the PacketBuffer
      */
     public static SPerkPacket fromBytes(final FriendlyByteBuf buf) {
-        final Map<ResourceLocation, Perk> data = buf.readWithCodec(CODEC);
+        final Map<ResourceLocation, Perk> data = buf.readJsonWithCodec(CODEC);
         return new SPerkPacket(data);
     }
 
@@ -55,7 +55,7 @@ public class SPerkPacket {
      * @param buf the PacketBuffer
      */
     public static void toBytes(final SPerkPacket msg, final FriendlyByteBuf buf) {
-        buf.writeWithCodec(CODEC, msg.data);
+        buf.writeJsonWithCodec(CODEC, msg.data);
     }
 
     /**

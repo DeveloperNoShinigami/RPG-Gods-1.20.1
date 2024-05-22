@@ -1,8 +1,8 @@
 package rpggods.network;
 
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.fml.LogicalSide;
 import net.minecraftforge.network.NetworkEvent;
@@ -20,10 +20,6 @@ public class SUpdateAltarPacket {
 
     protected int entityId;
     protected ItemStack block;
-
-    public SUpdateAltarPacket() {
-    }
-
 
     /**
      * @param entityId The ID of the AltarEntity

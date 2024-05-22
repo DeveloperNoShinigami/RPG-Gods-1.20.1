@@ -1,15 +1,15 @@
 package rpggods.data.deity;
 
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.network.chat.Component;
 import net.minecraftforge.registries.ForgeRegistries;
 import rpggods.RPGGods;
 import rpggods.data.favor.FavorRange;
 import rpggods.data.perk.Affinity;
 import rpggods.data.perk.Perk;
-import rpggods.data.perk.PerkCondition;
-import rpggods.data.perk.PerkAction;
+import rpggods.data.perk.action.PerkAction;
+import rpggods.data.perk.condition.PerkCondition;
 
 import java.util.ArrayList;
 import java.util.EnumMap;

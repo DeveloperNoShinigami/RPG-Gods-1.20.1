@@ -2,13 +2,13 @@ package rpggods.client.entity;
 
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.geom.ModelPart;
-import com.mojang.math.Vector3f;
 import net.minecraft.client.model.geom.builders.CubeDeformation;
 import net.minecraft.client.model.geom.builders.LayerDefinition;
 import net.minecraft.client.model.geom.builders.MeshDefinition;
+import org.joml.Vector3f;
+import rpggods.entity.AltarEntity;
 import rpggods.util.altar.AltarPose;
 import rpggods.util.altar.HumanoidPart;
-import rpggods.entity.AltarEntity;
 
 public class AltarArmorModel extends HumanoidModel<AltarEntity> {
 

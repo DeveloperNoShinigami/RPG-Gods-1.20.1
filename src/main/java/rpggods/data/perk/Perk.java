@@ -7,6 +7,8 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.resources.ResourceLocation;
 import rpggods.data.favor.FavorLevel;
 import rpggods.data.favor.FavorRange;
+import rpggods.data.perk.action.PerkAction;
+import rpggods.data.perk.condition.PerkCondition;
 
 import java.util.List;
 import java.util.Optional;

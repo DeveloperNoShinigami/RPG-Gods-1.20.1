@@ -44,7 +44,7 @@ public class SOfferingPacket {
      * @return a new instance of a SOfferingPacket based on the PacketBuffer
      */
     public static SOfferingPacket fromBytes(final FriendlyByteBuf buf) {
-        final Map<ResourceLocation, Offering> data = buf.readWithCodec(CODEC);
+        final Map<ResourceLocation, Offering> data = buf.readJsonWithCodec(CODEC);
         return new SOfferingPacket(data);
     }
 
@@ -55,7 +55,7 @@ public class SOfferingPacket {
      * @param buf the PacketBuffer
      */
     public static void toBytes(final SOfferingPacket msg, final FriendlyByteBuf buf) {
-        buf.writeWithCodec(CODEC, msg.data);
+        buf.writeJsonWithCodec(CODEC, msg.data);
     }
 
     /**
