@@ -1,7 +1,10 @@
 package rpggods.data.deity;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.registries.ForgeRegistries;
 import rpggods.RPGGods;
@@ -11,7 +14,9 @@ import rpggods.data.perk.Perk;
 import rpggods.data.perk.action.PerkAction;
 import rpggods.data.perk.condition.PerkCondition;
 
+import javax.annotation.concurrent.Immutable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
@@ -22,102 +27,79 @@ import java.util.Optional;
  * Centralizes all offerings, sacrifices, and perks
  * to reduce expensive searches and sorts after data has been loaded.
  */
+@Immutable
 public class DeityWrapper {
-    public static final DeityWrapper EMPTY = new DeityWrapper(new ResourceLocation("null"));
+    
+    public static final DeityWrapper EMPTY = DeityWrapper.builder(new ResourceLocation("null")).build();
 
     /** The ResourceLocation ID **/
     public final ResourceLocation id;
     /** List of Altars **/
-    public final List<ResourceLocation> altarList = new ArrayList<>();
+    public final List<ResourceLocation> altarList;
     /** Map of Item ID to Offering(s) **/
-    public final Map<ResourceLocation, List<ResourceLocation>> offeringMap = new HashMap<>();
+    public final Map<ResourceLocation, List<ResourceLocation>> offeringMap;
     /** Map of Entity ID to Sacrifice(s) **/
-    public final Map<ResourceLocation, List<ResourceLocation>> sacrificeMap = new HashMap<>();
+    public final Map<ResourceLocation, List<ResourceLocation>> sacrificeMap;
     /** Map of PerkCondition.Type to Perk(s). May contain multiple instances of the same Perk. **/
-    public final Map<PerkCondition.Type, List<ResourceLocation>> perkByConditionMap = new EnumMap<>(PerkCondition.Type.class);
+    public final Map<PerkCondition.Type, List<ResourceLocation>> perkByConditionMap;
     /** Map of PerkData.Type to Perk(s) **/
-    public final Map<PerkAction.Type, List<ResourceLocation>> perkByTypeMap = new EnumMap<>(PerkAction.Type.class);
+    public final Map<PerkAction.Type, List<ResourceLocation>> perkByTypeMap;
     /** List of all Perks **/
-    public final List<ResourceLocation> perkList = new ArrayList<>();
+    public final List<ResourceLocation> perkList;
+
+    //// CONSTRUCTOR ////
+
+    private DeityWrapper(ResourceLocation id,
+                         List<ResourceLocation> altarList,
+                         Map<ResourceLocation, List<ResourceLocation>> offeringMap,
+                         Map<ResourceLocation, List<ResourceLocation>> sacrificeMap,
+                         Map<PerkCondition.Type, List<ResourceLocation>> perkByConditionMap,
+                         Map<PerkAction.Type, List<ResourceLocation>> perkByTypeMap,
+                         List<ResourceLocation> perkList) {
+        this.id = id;
+        this.altarList = ImmutableList.copyOf(altarList);
+        this.offeringMap = ImmutableMap.copyOf(offeringMap);
+        this.sacrificeMap = ImmutableMap.copyOf(sacrificeMap);
+        this.perkByConditionMap = Collections.unmodifiableMap(new EnumMap<>(perkByConditionMap));
+        this.perkByTypeMap = Collections.unmodifiableMap(new EnumMap<>(perkByTypeMap));
+        this.perkList = ImmutableList.copyOf(perkList);
+    }
 
     /**
      * @param id the ID of the associated Deity
      */
-    public DeityWrapper(ResourceLocation id) {
-        this.id = id;
+    public static DeityWrapper.Builder builder(final ResourceLocation id) {
+        return new DeityWrapper.Builder(id);
     }
 
-    /**
-     * Add an Altar to this deity
-     * @param id the altar ID
-     * @param altar the Altar to add
-     */
-    public void add(final ResourceLocation id, final Altar altar) {
-        altarList.add(id);
+    //// GETTERS ////
+
+    public ResourceLocation getId() {
+        return id;
     }
 
-    /**
-     * Add an Offering to this deity
-     * @param id the offering ID
-     * @param offering the Offering to add
-     */
-    public void add(final ResourceLocation id, final Offering offering) {
-        if(offering.getFavor() == 0 && !offering.getFunction().isPresent() && !offering.getTrade().isPresent()) {
-            return;
-        }
-        ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(offering.getAccept().getItem());
-        offeringMap.computeIfAbsent(itemId, r -> new ArrayList<>()).add(id);
+    public List<ResourceLocation> getAltarList() {
+        return altarList;
     }
 
-    /**
-     * Add a Sacrifice to this deity
-     * @param id the sacrifice ID
-     * @param sacrifice the Sacrifice to add
-     */
-    public void add(final ResourceLocation id, final Sacrifice sacrifice) {
-        if(sacrifice.getFavor() == 0 && !sacrifice.getFunction().isPresent()) {
-            return;
-        }
-        ResourceLocation entityId = sacrifice.getEntity();
-        sacrificeMap.computeIfAbsent(entityId, r -> new ArrayList<>()).add(id);
+    public Map<ResourceLocation, List<ResourceLocation>> getOfferingMap() {
+        return offeringMap;
     }
 
-    /**
-     * Adds a Perk to this deity
-     * @param id the Perk ID
-     * @param perk the Perk to add
-     */
-    public void add(final ResourceLocation id, final Perk perk) {
-        // validate perk has a favor range and at least one action
-        if(FavorRange.EMPTY.equals(perk.getRange()) || perk.getActions().isEmpty()) {
-            return;
-        }
-        // validate actions can only unlock deities that are enabled
-        for(PerkAction action : perk.getActions()) {
-            if(action.getType() == PerkAction.Type.UNLOCK) {
-                Deity deity = RPGGods.DEITY_MAP.getOrDefault(action.getId().orElse(Deity.EMPTY.getId()), Deity.EMPTY);
-                if(!deity.isEnabled()) {
-                    RPGGods.LOGGER.info("Skipping perk with ID " + id + " because it unlocks a deity that is disabled.");
-                    return;
-                }
-            }
-        }
-        // add to list
-        perkList.add(id);
-        // add to perkByCondition map
-        for(PerkCondition condition : perk.getConditions()) {
-            perkByConditionMap.computeIfAbsent(condition.getType(), r -> new ArrayList<>()).add(id);
-        }
-        // add to perkByType map and affinity map
-        for(final PerkAction action : perk.getActions()) {
-            PerkAction.Type type = action.getType();
-            perkByTypeMap.computeIfAbsent(type, r -> new ArrayList<>()).add(id);
-            // add to affinity map if applicable
-            action.getAffinity().ifPresent(affinity -> {
-                RPGGods.AFFINITY.computeIfAbsent(affinity.getEntity(), entityId -> new EnumMap<>(Affinity.Type.class))
-                        .computeIfAbsent(affinity.getType(), affinityType -> new ArrayList<>()).add(id);
-            });
-        }
+    public Map<ResourceLocation, List<ResourceLocation>> getSacrificeMap() {
+        return sacrificeMap;
+    }
+
+    public Map<PerkCondition.Type, List<ResourceLocation>> getPerkByConditionMap() {
+        return perkByConditionMap;
+    }
+
+    public Map<PerkAction.Type, List<ResourceLocation>> getPerkByTypeMap() {
+        return perkByTypeMap;
+    }
+
+    public List<ResourceLocation> getPerkList() {
+        return perkList;
     }
 
     public Optional<Deity> getDeity() {
@@ -145,5 +127,78 @@ public class DeityWrapper {
         sb.append(" sacrifices[").append(sacrifices).append("]");
         sb.append(" perks[").append(perkList.size()).append("]");
         return sb.toString();
+    }
+
+    //// BUILDER ////
+
+    public static class Builder {
+        private final ResourceLocation id;
+        private final List<ResourceLocation> altarList = new ArrayList<>();
+        private final Map<ResourceLocation, List<ResourceLocation>> offeringMap = new HashMap<>();
+        private final Map<ResourceLocation, List<ResourceLocation>> sacrificeMap = new HashMap<>();
+        private final Map<PerkCondition.Type, List<ResourceLocation>> perkByConditionMap = new EnumMap<>(PerkCondition.Type.class);
+        private final Map<PerkAction.Type, List<ResourceLocation>> perkByTypeMap = new EnumMap<>(PerkAction.Type.class);
+        private final List<ResourceLocation> perkList = new ArrayList<>();
+
+        /**
+         * @param id the ID of the associated Deity
+         */
+        public Builder(ResourceLocation id) {
+            this.id = id;
+        }
+
+        public Builder addAltar(ResourceLocation id) {
+            this.altarList.add(id);
+            return this;
+        }
+
+        public Builder addOffering(ResourceLocation id, Offering offering) {
+            if (offering.getFavor() == 0 && !offering.getFunction().isPresent() && !offering.getTrade().isPresent()) {
+                return this;
+            }
+            ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(offering.getAccept().getItem());
+            this.offeringMap.computeIfAbsent(itemId, r -> new ArrayList<>()).add(id);
+            return this;
+        }
+
+        public Builder addSacrifice(ResourceLocation id, Sacrifice sacrifice) {
+            if (sacrifice.getFavor() == 0 && !sacrifice.getFunction().isPresent()) {
+                return this;
+            }
+            ResourceLocation entityId = sacrifice.getEntity();
+            this.sacrificeMap.computeIfAbsent(entityId, r -> new ArrayList<>()).add(id);
+            return this;
+        }
+
+        public Builder addPerk(ResourceLocation id, Perk perk) {
+            if (FavorRange.EMPTY.equals(perk.getRange()) || perk.getActions().isEmpty()) {
+                return this;
+            }
+            for (PerkAction action : perk.getActions()) {
+                if (action.getType() == PerkAction.Type.UNLOCK) {
+                    Deity deity = RPGGods.DEITY_MAP.getOrDefault(action.getId().orElse(Deity.EMPTY.getId()), Deity.EMPTY);
+                    if (!deity.isEnabled()) {
+                        RPGGods.LOGGER.info("Skipping perk with ID " + id + " because it unlocks a deity that is disabled.");
+                        return this;
+                    }
+                }
+            }
+            this.perkList.add(id);
+            for (PerkCondition condition : perk.getConditions()) {
+                this.perkByConditionMap.computeIfAbsent(condition.getType(), r -> new ArrayList<>()).add(id);
+            }
+            for (PerkAction action : perk.getActions()) {
+                PerkAction.Type type = action.getType();
+                this.perkByTypeMap.computeIfAbsent(type, r -> new ArrayList<>()).add(id);
+                action.getAffinity().ifPresent(affinity -> RPGGods.AFFINITY
+                        .computeIfAbsent(affinity.getEntity(), entityId -> new EnumMap<>(Affinity.Type.class))
+                        .computeIfAbsent(affinity.getType(), affinityType -> new ArrayList<>()).add(id));
+            }
+            return this;
+        }
+
+        public DeityWrapper build() {
+            return new DeityWrapper(id, altarList, offeringMap, sacrificeMap, perkByConditionMap, perkByTypeMap, perkList);
+        }
     }
 }
