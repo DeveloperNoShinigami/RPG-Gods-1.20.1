@@ -10,40 +10,43 @@ import net.minecraft.core.Registry;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtUtils;
 import net.minecraft.nbt.TagParser;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.tags.BlockTags;
-import net.minecraft.tags.ItemTags;
 import net.minecraft.tags.TagKey;
+import net.minecraft.util.ExtraCodecs;
 import net.minecraft.util.StringRepresentable;
-import net.minecraft.world.effect.MobEffect;
-import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.biome.Biome;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.entity.EntityTypeTest;
 import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.registries.ForgeRegistries;
-import rpggods.RGEvents;
+import rpggods.RGRegistry;
 import rpggods.RPGGods;
-import rpggods.data.deity.Altar;
+import rpggods.data.deity.Deity;
 import rpggods.data.favor.IFavor;
 import rpggods.entity.AltarEntity;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 
-public final class PerkCondition {
+public abstract class PerkCondition {
+
+
+    public static final Codec<PerkCondition> DIRECT_CODEC = ExtraCodecs.lazyInitializedCodec(() -> RGRegistry.PERK_CONDITION_TYPES_SUPPLIER.get().getCodec())
+            .dispatch(PerkCondition::getCodec, Function.identity());
+
+    public abstract boolean match(final ResourceLocation deity, final Player player, final IFavor favor,
+                         final Optional<ResourceLocation> data, final Optional<CompoundTag> entityTag);
+
+    public abstract Component getName(final RegistryAccess registryAccess);
+
+    public abstract Codec<? extends PerkCondition> getCodec();
 
     // TODO dispatch codec for PerkCondition
 
@@ -59,7 +62,7 @@ public final class PerkCondition {
     private final Optional<CompoundTag> tag;
     private final Optional<ResourceLocation> id;
 
-    public PerkCondition(PerkCondition.Type type, Optional<String> data, Optional<String> tag) {
+   /* public PerkCondition(PerkCondition.Type type, Optional<String> data, Optional<String> tag) {
         this.type = type;
         this.data = data;
         this.tagString = tag;
@@ -79,6 +82,16 @@ public final class PerkCondition {
             }
         }
         this.tag = temp;
+    }*/
+
+    protected static Optional<CompoundTag> parseTag(final String tagString) {
+        try {
+            CompoundTag tag = TagParser.parseTag(tagString);
+            return Optional.of(tag);
+        } catch (CommandSyntaxException e) {
+            RPGGods.LOGGER.error("Failed to parse NBT in PerkCondition\n" + e.getMessage());
+        }
+        return Optional.empty();
     }
 
     public PerkCondition.Type getType() {
@@ -101,37 +114,10 @@ public final class PerkCondition {
         return tagString;
     }
 
-    /**
-     * Checks if the player is in a specific biome
-     * @param world the world
-     * @param pos the player position
-     * @return True if this condition has a biome and the position is in that biome
-     */
-    public boolean isInBiome(final Level world, final BlockPos pos) {
-        // if biome data is present for this condition, make sure the biome matches
-        if(type == PerkCondition.Type.BIOME && data.isPresent()) {
-            final Holder<Biome> biome = world.getBiome(pos);
-            if(id.isPresent()) {
-                // interpret as a biome name
-                // if the biome name does not match, the condition is false
-                if(biome.is(id.get())) {
-                    return true;
-                }
-            } else if(data.get().startsWith("#")) {
-                // interpret as biome tag
-                ResourceLocation tagId = ResourceLocation.tryParse(data.get().substring(1));
-                if(tagId != null) {
-                    final TagKey<Biome> biomeTag = ForgeRegistries.BIOMES.tags().createTagKey(tagId);
-                    if(biome.is(biomeTag)) {
-                        return true;
-                    }
-                }
-            }
-            // biome did not pass biome-name or biome-tag check
-            return false;
-        }
-        // always return true when type is not biome or data is missing
-        return true;
+
+    public Optional<Deity> getDeity(final RegistryAccess registryAccess, final ResourceLocation deity) {
+        final Registry<Deity> registry = registryAccess.registryOrThrow(RGRegistry.Keys.DEITIES);
+        return registry.getOptional(deity);
     }
 
     /**
@@ -141,17 +127,19 @@ public final class PerkCondition {
      * @return True if this condition has a structure and the position is inside the structure
      */
     public boolean isInStructure(final ServerLevel world, final BlockPos pos) {
+        final Registry<Structure> registry = world.registryAccess().registryOrThrow(Registries.STRUCTURE);
+
         if(type == PerkCondition.Type.STRUCTURE && data.isPresent()) {
             
             Structure structure = null;
             TagKey<Structure> structureTagKey = null;
             
             if(id.isPresent()) {
-                structure = BuiltinRegistries.STRUCTURES.get(id.get());
+                structure = registry.get(id.get());
             } else if(data.get().startsWith("#")) {
                 ResourceLocation tagId = ResourceLocation.tryParse(data.get().substring(1));
                 if(tagId != null) {
-                    structureTagKey = TagKey.create(Registry.STRUCTURE_REGISTRY, tagId);
+                    structureTagKey = TagKey.create(registry.key(), tagId);
                 }
             }
             // iterate over all structures at this position
@@ -199,7 +187,7 @@ public final class PerkCondition {
      */
     public boolean isNearAltar(final Level level, final Vec3 origin, final double distance) {
         if(type == PerkCondition.Type.NEAR_ALTAR && id.isPresent()) {
-            AABB aabb = new AABB(new BlockPos(origin)).inflate(distance, distance / 2.0D, distance);
+            AABB aabb = new AABB(BlockPos.containing(origin)).inflate(distance, distance / 2.0D, distance);
             List<AltarEntity> altars = level.getEntities(EntityTypeTest.forClass(AltarEntity.class), aabb, a -> a.getDeity().isPresent() && id.get().equals(a.getDeity().get()));
             return !altars.isEmpty();
         }
@@ -212,7 +200,7 @@ public final class PerkCondition {
     }
 
     public Component getDisplayName() {
-        return this.getType().getDisplayName(dataToDisplay(getData().orElse("")));
+        return this.getType().getDisplayName(getName(getData().orElse("")));
     }
 
     /**
@@ -224,7 +212,7 @@ public final class PerkCondition {
      * @param entityTag an Entity CompoundNBT associated with the perk calling this condition, if any
      * @return True if the PerkCondition passed
      */
-    public boolean match(final ResourceLocation deity, final Player player, final IFavor favor,
+    /*public boolean match(final ResourceLocation deity, final Player player, final IFavor favor,
                          final Optional<ResourceLocation> data, final Optional<CompoundTag> entityTag) {
         boolean idMatch;
         boolean tagMatch;
@@ -300,9 +288,9 @@ public final class PerkCondition {
                 return idMatch && tagMatch;
         }
         return false;
-    }
+    }*/
 
-    private Component dataToDisplay(final String d) {
+    /*private Component dataToDisplay(final String d) {
         ResourceLocation rl = ResourceLocation.tryParse(d);
         switch (getType()) {
             case PATRON: case UNLOCKED: case NEAR_ALTAR: case LEVEL_UP: case LEVEL_DOWN:
@@ -362,7 +350,7 @@ public final class PerkCondition {
             case DAY: case NIGHT: case RANDOM_TICK: case ENTER_COMBAT: case PLAYER_CROUCHING: default:
                 return Component.empty();
         }
-    }
+    }*/
 
     // TODO dispatch registry for PerkCondition
     public static enum Type implements StringRepresentable {

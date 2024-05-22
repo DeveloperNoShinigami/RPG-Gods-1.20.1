@@ -29,7 +29,7 @@ import java.util.Optional;
  */
 @Immutable
 public class DeityWrapper {
-    
+
     public static final DeityWrapper EMPTY = DeityWrapper.builder(new ResourceLocation("null")).build();
 
     /** The ResourceLocation ID **/

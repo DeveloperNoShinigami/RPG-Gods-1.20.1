@@ -1,8 +1,10 @@
 package rpggods;
 
 import com.mojang.serialization.Codec;
+import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -24,14 +26,27 @@ import net.minecraftforge.common.loot.IGlobalLootModifier;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.event.entity.EntityAttributeCreationEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.minecraftforge.registries.DataPackRegistryEvent;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraftforge.registries.IForgeRegistry;
+import net.minecraftforge.registries.RegistryBuilder;
 import net.minecraftforge.registries.RegistryObject;
 import rpggods.block.AltarLightBlock;
 import rpggods.block.BrazierBlock;
 import rpggods.block.entity.BrazierBlockEntity;
+import rpggods.data.deity.Altar;
+import rpggods.data.deity.Deity;
+import rpggods.data.deity.Offering;
+import rpggods.data.deity.Sacrifice;
 import rpggods.data.favor.Favor;
 import rpggods.data.favor.IFavor;
+import rpggods.data.perk.Perk;
+import rpggods.data.perk.action.PerkAction;
+import rpggods.data.perk.condition.BiomeCondition;
+import rpggods.data.perk.condition.PatronCondition;
+import rpggods.data.perk.condition.PerkCondition;
+import rpggods.data.perk.condition.UnlockedCondition;
 import rpggods.data.tameable.ITameable;
 import rpggods.entity.AltarEntity;
 import rpggods.item.AltarItem;
@@ -44,6 +59,8 @@ import rpggods.util.CropMultiplierModifier;
 import rpggods.util.ShapedAltarRecipe;
 import rpggods.util.ShapelessAltarRecipe;
 
+import java.util.function.Supplier;
+
 public final class RGRegistry {
 
     private static final DeferredRegister<Block> BLOCKS = DeferredRegister.create(ForgeRegistries.BLOCKS, RPGGods.MODID);
@@ -55,6 +72,22 @@ public final class RGRegistry {
     private static final DeferredRegister<RecipeSerializer<?>> RECIPE_SERIALIZERS = DeferredRegister.create(ForgeRegistries.RECIPE_SERIALIZERS, RPGGods.MODID);
     private static final DeferredRegister<Codec<? extends IGlobalLootModifier>> LOOT_MODIFIER_SERIALIZERS = DeferredRegister.create(ForgeRegistries.Keys.GLOBAL_LOOT_MODIFIER_SERIALIZERS, RPGGods.MODID);
     private static final DeferredRegister<StructureProcessorType<?>> STRUCTURE_PROCESSORS = DeferredRegister.create(BuiltInRegistries.STRUCTURE_PROCESSOR.key(), RPGGods.MODID);
+    // ALTARS //
+    private static final DeferredRegister<Altar> ALTARS = DeferredRegister.create(Keys.ALTARS, RPGGods.MODID);
+    // DEITIES //
+    private static final DeferredRegister<Deity> DEITIES = DeferredRegister.create(Keys.DEITIES, RPGGods.MODID);
+    // OFFERINGS //
+    private static final DeferredRegister<Offering> OFFERINGS = DeferredRegister.create(Keys.OFFERINGS, RPGGods.MODID);
+    // SACRIFICES //
+    private static final DeferredRegister<Sacrifice> SACRIFICES = DeferredRegister.create(Keys.SACRIFICES, RPGGods.MODID);
+    // PERKS //
+    private static final DeferredRegister<Codec<? extends PerkCondition>> PERK_CONDITION_TYPES = DeferredRegister.create(Keys.PERK_CONDITION_TYPES, RPGGods.MODID);
+    public static final Supplier<IForgeRegistry<Codec<? extends PerkCondition>>> PERK_CONDITION_TYPES_SUPPLIER = PERK_CONDITION_TYPES.makeRegistry(() -> new RegistryBuilder<>());
+    private static final DeferredRegister<PerkCondition> PERK_CONDITIONS = DeferredRegister.create(Keys.PERK_CONDITIONS, RPGGods.MODID);
+    private static final DeferredRegister<Codec<? extends PerkAction>> PERK_ACTION_TYPES = DeferredRegister.create(Keys.PERK_ACTION_TYPES, RPGGods.MODID);
+    public static final Supplier<IForgeRegistry<Codec<? extends PerkAction>>> PERK_ACTION_TYPES_SUPPLIER = PERK_ACTION_TYPES.makeRegistry(() -> new RegistryBuilder<>());
+    private static final DeferredRegister<PerkAction> PERK_ACTIONS = DeferredRegister.create(Keys.PERK_ACTIONS, RPGGods.MODID);
+    private static final DeferredRegister<Perk> PERKS = DeferredRegister.create(Keys.PERKS, RPGGods.MODID);
 
     public static void register() {
         BlockReg.register();
@@ -67,6 +100,24 @@ public final class RGRegistry {
         LootModifierReg.register();
         CapabilityReg.register();
         StructureProcessorReg.register();
+        // Custom registries
+        AltarReg.register();
+        DeityReg.register();
+        OfferingReg.register();
+        SacrificeReg.register();
+        PerkConditionReg.register();
+        PerkActionReg.register();
+        PerkReg.register();
+        // Register listener for data pack registry event
+        FMLJavaModLoadingContext.get().getModEventBus().addListener(RGRegistry::onRegisterDatapackRegistries);
+    }
+
+    public static void onRegisterDatapackRegistries(final DataPackRegistryEvent.NewRegistry event) {
+        event.dataPackRegistry(Keys.ALTARS, Altar.CODEC, Altar.CODEC);
+        event.dataPackRegistry(Keys.DEITIES, Deity.CODEC, Deity.CODEC);
+        event.dataPackRegistry(Keys.OFFERINGS, Offering.CODEC, Offering.CODEC);
+        event.dataPackRegistry(Keys.SACRIFICES, Sacrifice.CODEC, Sacrifice.CODEC);
+        event.dataPackRegistry(Keys.PERKS, Perk.CODEC, Perk.CODEC);
     }
 
     public static final class BlockReg {
@@ -209,5 +260,66 @@ public final class RGRegistry {
 
         public static final RegistryObject<StructureProcessorType<AltarStructureProcessor>> ALTAR = STRUCTURE_PROCESSORS.register("altar", () ->
                 () -> AltarStructureProcessor.CODEC);
+    }
+
+    public static final class AltarReg {
+        private static void register() {
+            ALTARS.register(FMLJavaModLoadingContext.get().getModEventBus());
+        }
+    }
+
+    public static final class DeityReg {
+        private static void register() {
+            DEITIES.register(FMLJavaModLoadingContext.get().getModEventBus());
+        }
+    }
+
+    public static final class OfferingReg {
+        private static void register() {
+            OFFERINGS.register(FMLJavaModLoadingContext.get().getModEventBus());
+        }
+    }
+
+    public static final class SacrificeReg {
+        private static void register() {
+            SACRIFICES.register(FMLJavaModLoadingContext.get().getModEventBus());
+        }
+    }
+
+    public static final class PerkConditionReg {
+        private static void register() {
+            PERK_CONDITION_TYPES.register(FMLJavaModLoadingContext.get().getModEventBus());
+            PERK_CONDITIONS.register(FMLJavaModLoadingContext.get().getModEventBus());
+        }
+
+        public static final RegistryObject<Codec<BiomeCondition>> BIOME = PERK_CONDITION_TYPES.register("biome", () -> BiomeCondition.CODEC);
+        public static final RegistryObject<Codec<PatronCondition>> PATRON = PERK_CONDITION_TYPES.register("patron", () -> PatronCondition.CODEC);
+        public static final RegistryObject<Codec<UnlockedCondition>> UNLOCKED = PERK_CONDITION_TYPES.register("unlocked", () -> UnlockedCondition.CODEC);
+    }
+
+    public static final class PerkActionReg {
+        private static void register() {
+            PERK_ACTION_TYPES.register(FMLJavaModLoadingContext.get().getModEventBus());
+            PERK_ACTIONS.register(FMLJavaModLoadingContext.get().getModEventBus());
+        }
+    }
+
+    public static final class PerkReg {
+        private static void register() {
+            PERKS.register(FMLJavaModLoadingContext.get().getModEventBus());
+        }
+    }
+
+    public static final class Keys {
+        private static final String NAMESPACE = "deity";
+        public static final ResourceKey<Registry<Altar>> ALTARS = ResourceKey.createRegistryKey(new ResourceLocation(NAMESPACE, "altar"));
+        public static final ResourceKey<Registry<Deity>> DEITIES = ResourceKey.createRegistryKey(new ResourceLocation(NAMESPACE, "deity"));
+        public static final ResourceKey<Registry<Offering>> OFFERINGS = ResourceKey.createRegistryKey(new ResourceLocation(NAMESPACE, "offering"));
+        public static final ResourceKey<Registry<Sacrifice>> SACRIFICES = ResourceKey.createRegistryKey(new ResourceLocation(NAMESPACE, "sacrifice"));
+        public static final ResourceKey<Registry<Codec<? extends PerkAction>>> PERK_ACTION_TYPES = ResourceKey.createRegistryKey(new ResourceLocation(NAMESPACE, "perk_action_serializer"));
+        public static final ResourceKey<Registry<PerkAction>> PERK_ACTIONS = ResourceKey.createRegistryKey(new ResourceLocation(NAMESPACE, "perk_action"));
+        public static final ResourceKey<Registry<Codec<? extends PerkCondition>>> PERK_CONDITION_TYPES = ResourceKey.createRegistryKey(new ResourceLocation(NAMESPACE, "perk_condition_serializer"));
+        public static final ResourceKey<Registry<PerkCondition>> PERK_CONDITIONS = ResourceKey.createRegistryKey(new ResourceLocation(NAMESPACE, "perk_condition"));
+        public static final ResourceKey<Registry<Perk>> PERKS = ResourceKey.createRegistryKey(new ResourceLocation(NAMESPACE, "perk"));
     }
 }
