@@ -1,9 +1,15 @@
+/**
+ * Copyright (c) 2024 Skyler James
+ * Permission is granted to use, modify, and redistribute this software, in parts or in whole,
+ * under the GNU LGPLv3 license (https://www.gnu.org/licenses/lgpl-3.0.en.html)
+ **/
+
 package rpggods.data.perk.condition;
 
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
-import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
@@ -18,7 +24,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.TagKey;
 import net.minecraft.util.ExtraCodecs;
 import net.minecraft.util.StringRepresentable;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.entity.EntityTypeTest;
 import net.minecraft.world.level.levelgen.structure.Structure;
@@ -26,10 +31,11 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import rpggods.RGRegistry;
 import rpggods.RPGGods;
-import rpggods.data.deity.Deity;
-import rpggods.data.favor.IFavor;
 import rpggods.entity.AltarEntity;
+import rpggods.util.RGCodecUtils;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -37,52 +43,45 @@ import java.util.function.Function;
 
 public abstract class PerkCondition {
 
-
     public static final Codec<PerkCondition> DIRECT_CODEC = ExtraCodecs.lazyInitializedCodec(() -> RGRegistry.PERK_CONDITION_TYPES_SUPPLIER.get().getCodec())
             .dispatch(PerkCondition::getCodec, Function.identity());
+    public static final Codec<List<PerkCondition>> LIST_CODEC = RGCodecUtils.listOrElementCodec(DIRECT_CODEC);
 
-    public abstract boolean match(final ResourceLocation deity, final Player player, final IFavor favor,
-                         final Optional<ResourceLocation> data, final Optional<CompoundTag> entityTag);
+    private final List<Component> description = new ArrayList<>();
+    private final List<Component> descriptionView = Collections.unmodifiableList(description);
 
-    public abstract Component getName(final RegistryAccess registryAccess);
+    public PerkCondition() {
+        // no op
+    }
 
+    /**
+     * @param context the {@link PerkConditionContext} to test
+     * @return true if the perk condition matches the given parameters
+     */
+    public abstract boolean test(final PerkConditionContext context);
+
+    /**
+     * @param registryAccess the Registry Access instance
+     * @return the name of this perk condition as a {@link Component}
+     */
+    public abstract List<Component> createDescription(final RegistryAccess registryAccess);
+
+    /**
+     * @return the Codec used to encode/decode this {@link PerkCondition}
+     * @see rpggods.RGRegistry.PerkConditionReg
+     */
     public abstract Codec<? extends PerkCondition> getCodec();
 
-    // TODO dispatch codec for PerkCondition
-
-    public static final Codec<PerkCondition> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            PerkCondition.Type.CODEC.fieldOf("type").forGetter(PerkCondition::getType),
-            Codec.STRING.optionalFieldOf("data").forGetter(PerkCondition::getData),
-            Codec.STRING.optionalFieldOf("tag").forGetter(PerkCondition::getTagString)
-    ).apply(instance, PerkCondition::new));
-
-    private final PerkCondition.Type type;
-    private final Optional<String> data;
-    private final Optional<String> tagString;
-    private final Optional<CompoundTag> tag;
-    private final Optional<ResourceLocation> id;
-
-   /* public PerkCondition(PerkCondition.Type type, Optional<String> data, Optional<String> tag) {
-        this.type = type;
-        this.data = data;
-        this.tagString = tag;
-        // parse ResourceLocation ID from data string
-        if(data.isPresent() && data.get().contains(":")) {
-            this.id = Optional.ofNullable(ResourceLocation.tryParse(getData().get()));
-        } else {
-            this.id = Optional.empty();
+    /**
+     * @param registryAccess the registry access
+     * @return a list of text components that describe this modifier condition
+     */
+    public final List<Component> getDescription(final RegistryAccess registryAccess) {
+        if(description.isEmpty()) {
+            description.addAll(createDescription(registryAccess));
         }
-        // parse NBT from tag string
-        Optional<CompoundTag> temp = Optional.empty();
-        if(tagString.isPresent()) {
-            try {
-                temp = Optional.of(TagParser.parseTag(tagString.get()));
-            } catch (CommandSyntaxException e) {
-                RPGGods.LOGGER.error("Failed to parse NBT in PerkCondition\n" + e.getMessage());
-            }
-        }
-        this.tag = temp;
-    }*/
+        return descriptionView;
+    }
 
     protected static Optional<CompoundTag> parseTag(final String tagString) {
         try {
@@ -94,30 +93,13 @@ public abstract class PerkCondition {
         return Optional.empty();
     }
 
-    public PerkCondition.Type getType() {
-        return type;
-    }
-
-    public Optional<String> getData() {
-        return data;
-    }
-
-    public Optional<ResourceLocation> getId() {
-        return id;
-    }
-
-    public Optional<CompoundTag> getTag() {
-        return tag;
-    }
-
-    public Optional<String> getTagString() {
-        return tagString;
-    }
-
-
-    public Optional<Deity> getDeity(final RegistryAccess registryAccess, final ResourceLocation deity) {
-        final Registry<Deity> registry = registryAccess.registryOrThrow(RGRegistry.Keys.DEITIES);
-        return registry.getOptional(deity);
+    /**
+     * @param resourceKey a resource key
+     * @param <T> the resource key type
+     * @return the text representation of the resource key location
+     */
+    protected static <T> Component createResourceKeyDescription(ResourceKey<T> resourceKey) {
+        return Component.literal(resourceKey.location().toString()).withStyle(ChatFormatting.GRAY);
     }
 
     /**
@@ -127,7 +109,7 @@ public abstract class PerkCondition {
      * @return True if this condition has a structure and the position is inside the structure
      */
     public boolean isInStructure(final ServerLevel world, final BlockPos pos) {
-        final Registry<Structure> registry = world.registryAccess().registryOrThrow(Registries.STRUCTURE);
+        /*final Registry<Structure> registry = world.registryAccess().registryOrThrow(Registries.STRUCTURE);
 
         if(type == PerkCondition.Type.STRUCTURE && data.isPresent()) {
             
@@ -153,7 +135,7 @@ public abstract class PerkCondition {
                     return true;
                 }
             }
-        }
+        }*/
         return false;
     }
 
@@ -186,32 +168,23 @@ public abstract class PerkCondition {
      * @return true if the origin is within the given distance to an altar to the given deity
      */
     public boolean isNearAltar(final Level level, final Vec3 origin, final double distance) {
-        if(type == PerkCondition.Type.NEAR_ALTAR && id.isPresent()) {
+        /*if(type == PerkCondition.Type.NEAR_ALTAR && id.isPresent()) {
             AABB aabb = new AABB(BlockPos.containing(origin)).inflate(distance, distance / 2.0D, distance);
             List<AltarEntity> altars = level.getEntities(EntityTypeTest.forClass(AltarEntity.class), aabb, a -> a.getDeity().isPresent() && id.get().equals(a.getDeity().get()));
             return !altars.isEmpty();
-        }
+        }*/
         return false;
     }
 
-    @Override
+/*    @Override
     public String toString() {
         return "PerkCondition: " + " type[" + type + "]" + " data[" + data + "]";
-    }
+    }*/
 
     public Component getDisplayName() {
-        return this.getType().getDisplayName(getName(getData().orElse("")));
+        return Component.empty(); // this.getType().getDisplayName(createDescription(getData().orElse("")));
     }
 
-    /**
-     * Determines if the given perk condition is true.
-     * @param deity the deity for which the perk is running
-     * @param player the player
-     * @param favor the player's favor
-     * @param data a ResourceLocation associated with the perk calling this condition, if any
-     * @param entityTag an Entity CompoundNBT associated with the perk calling this condition, if any
-     * @return True if the PerkCondition passed
-     */
     /*public boolean match(final ResourceLocation deity, final Player player, final IFavor favor,
                          final Optional<ResourceLocation> data, final Optional<CompoundTag> entityTag) {
         boolean idMatch;
@@ -353,30 +326,31 @@ public abstract class PerkCondition {
     }*/
 
     // TODO dispatch registry for PerkCondition
+    @Deprecated
     public static enum Type implements StringRepresentable {
-        PATRON("patron"),
-        BIOME("biome"),
-        DAY("day"),
-        NIGHT("night"),
-        RANDOM_TICK("random_tick"),
-        MAINHAND_ITEM("mainhand_item"),
-        STRUCTURE("structure"),
-        DIMENSION("dimension"),
-        EFFECT_START("effect_start"),
-        ENTITY_HURT_PLAYER("entity_hurt_player"),
-        ENTITY_KILLED_PLAYER("entity_killed_player"),
-        PLAYER_HURT_ENTITY("player_hurt_entity"),
-        PLAYER_KILLED_ENTITY("player_killed_entity"),
-        PLAYER_INTERACT_ENTITY("player_interact_entity"),
-        PLAYER_INTERACT_BLOCK("player_interact_block"),
-        PLAYER_RIDE_ENTITY("player_ride_entity"),
-        PLAYER_CROUCHING("player_crouching"),
-        RITUAL("ritual"),
-        UNLOCKED("unlocked"),
-        ENTER_COMBAT("enter_combat"),
-        NEAR_ALTAR("near_altar"),
-        LEVEL_UP("level_up"),
-        LEVEL_DOWN("level_down");
+        @Deprecated PATRON("patron"),
+        @Deprecated BIOME("biome"),
+        @Deprecated DAY("day"),
+        @Deprecated NIGHT("night"),
+        @Deprecated RANDOM_TICK("random_tick"),
+        @Deprecated MAINHAND_ITEM("mainhand_item"),
+        @Deprecated STRUCTURE("structure"),
+        @Deprecated DIMENSION("dimension"),
+        @Deprecated EFFECT_START("effect_start"),
+        @Deprecated ENTITY_HURT_PLAYER("entity_hurt_player"),
+        @Deprecated ENTITY_KILLED_PLAYER("entity_killed_player"),
+        @Deprecated PLAYER_HURT_ENTITY("player_hurt_entity"),
+        @Deprecated PLAYER_KILLED_ENTITY("player_killed_entity"),
+        @Deprecated PLAYER_INTERACT_ENTITY("player_interact_entity"),
+        @Deprecated PLAYER_INTERACT_BLOCK("player_interact_block"),
+        @Deprecated PLAYER_RIDE_ENTITY("player_ride_entity"),
+        @Deprecated PLAYER_CROUCHING("player_crouching"),
+        @Deprecated RITUAL("ritual"),
+        @Deprecated UNLOCKED("unlocked"),
+        @Deprecated ENTER_COMBAT("enter_combat"),
+        @Deprecated NEAR_ALTAR("near_altar"),
+        @Deprecated LEVEL_UP("level_up"),
+        @Deprecated LEVEL_DOWN("level_down");
 
         private static final Codec<PerkCondition.Type> CODEC = Codec.STRING.comapFlatMap(PerkCondition.Type::fromString, PerkCondition.Type::getSerializedName).stable();
         private final String name;
@@ -391,7 +365,7 @@ public abstract class PerkCondition {
                     return DataResult.success(t);
                 }
             }
-            return DataResult.error("Failed to parse perk condition '" + id + "'");
+            return DataResult.error(() -> "Failed to parse perk condition '" + id + "'");
         }
 
         public Component getDisplayName(Component data) {

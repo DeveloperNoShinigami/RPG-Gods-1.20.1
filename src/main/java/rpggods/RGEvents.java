@@ -1,3 +1,9 @@
+/**
+ * Copyright (c) 2024 Skyler James
+ * Permission is granted to use, modify, and redistribute this software, in parts or in whole,
+ * under the GNU LGPLv3 license (https://www.gnu.org/licenses/lgpl-3.0.en.html)
+ **/
+
 package rpggods;
 
 import com.google.common.collect.ImmutableList;
@@ -202,7 +208,7 @@ public class RGEvents {
                             // check sacrifice conditions
                             boolean matchConditions = true;
                             for (PerkCondition condition : sacrifice.getConditions()) {
-                                if (!condition.match(deityId, player, favor, optionalEntityId, optionalEntityTag)) {
+                                if (!condition.test(deityId)) {
                                     matchConditions = false;
                                     break;
                                 }
@@ -377,7 +383,7 @@ public class RGEvents {
             }
             // check perk conditions
             for (final PerkCondition condition : perk.getConditions()) {
-                if (!condition.match(perk.getDeity(), player, favor, data, nbt)) {
+                if (!condition.test(perk.getDeity())) {
                     return false;
                 }
             }

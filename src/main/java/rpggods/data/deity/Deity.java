@@ -1,10 +1,23 @@
+/**
+ * Copyright (c) 2024 Skyler James
+ * Permission is granted to use, modify, and redistribute this software, in parts or in whole,
+ * under the GNU LGPLv3 license (https://www.gnu.org/licenses/lgpl-3.0.en.html)
+ **/
+
 package rpggods.data.deity;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.core.Registry;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
+import rpggods.RGRegistry;
 
+import javax.annotation.concurrent.Immutable;
+import java.util.Optional;
+
+@Immutable
 public class Deity {
 
     public static final Deity EMPTY = new Deity(new ResourceLocation("null"), ItemStack.EMPTY, false, false, 0, 0);
@@ -41,6 +54,18 @@ public class Deity {
         this.minLevel = minLevel;
         this.maxLevel = maxLevel;
     }
+
+    //// HELPER METHODS ////
+
+    /**
+     * @param registryAccess the registry access
+     * @return the {@link Deity} registry
+     */
+    public static Registry<Deity> getRegistry(final RegistryAccess registryAccess) {
+        return registryAccess.registryOrThrow(RGRegistry.Keys.DEITIES);
+    }
+
+    //// GETTERS ////
 
     /** @return The deity ID, must be unique **/
     public ResourceLocation getId() {

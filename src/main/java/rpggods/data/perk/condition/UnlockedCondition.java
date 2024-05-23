@@ -1,15 +1,21 @@
+/**
+ * Copyright (c) 2024 Skyler James
+ * Permission is granted to use, modify, and redistribute this software, in parts or in whole,
+ * under the GNU LGPLv3 license (https://www.gnu.org/licenses/lgpl-3.0.en.html)
+ **/
+
 package rpggods.data.perk.condition;
 
+import com.google.common.collect.ImmutableList;
 import com.mojang.serialization.Codec;
 import net.minecraft.core.RegistryAccess;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.player.Player;
 import rpggods.RGRegistry;
 import rpggods.data.deity.Altar;
-import rpggods.data.favor.IFavor;
+import rpggods.data.deity.Deity;
 
+import java.util.List;
 import java.util.Optional;
 
 public class UnlockedCondition extends PerkCondition {
@@ -25,13 +31,23 @@ public class UnlockedCondition extends PerkCondition {
     }
 
     @Override
-    public boolean match(ResourceLocation deity, Player player, IFavor favor, Optional<ResourceLocation> data, Optional<CompoundTag> entityTag) {
-        return getDeity(player.level().registryAccess(), deity).isPresent() && favor.getFavor(deity).isEnabled();
+    public boolean test(PerkConditionContext context) {
+        // verify deity exists
+        Optional<Deity> oDeity = Deity.getRegistry(context.getRegistryAccess()).getOptional(deity);
+        if(oDeity.isEmpty()) {
+            return false;
+        }
+        // verify deity is present in favor
+        if(!context.getFavor().getFavor(deity).isEnabled()) {
+            return false;
+        }
+        // all checks passed
+        return true;
     }
 
     @Override
-    public Component getName(RegistryAccess registryAccess) {
-        return Component.translatable(Altar.createTranslationKey(deity));
+    public List<Component> createDescription(RegistryAccess registryAccess) {
+        return ImmutableList.of(Component.translatable(Altar.createTranslationKey(deity)));
     }
 
     @Override

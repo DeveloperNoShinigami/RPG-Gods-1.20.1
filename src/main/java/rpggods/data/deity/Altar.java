@@ -1,8 +1,17 @@
+/**
+ * Copyright (c) 2024 Skyler James
+ * Permission is granted to use, modify, and redistribute this software, in parts or in whole,
+ * under the GNU LGPLv3 license (https://www.gnu.org/licenses/lgpl-3.0.en.html)
+ **/
+
 package rpggods.data.deity;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.core.Registry;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.resources.ResourceLocation;
+import rpggods.RGRegistry;
 import rpggods.util.altar.AltarItems;
 import rpggods.util.altar.AltarPose;
 
@@ -39,6 +48,8 @@ public class Altar {
 
     private final Optional<ResourceLocation> deity;
 
+    //// CONSTRUCTOR ////
+
     public Altar(boolean enabled, Optional<String> name, boolean female, boolean slim,
                  int lightLevel, AltarItems items, ResourceLocation material,
                  AltarPose pose, boolean poseLocked) {
@@ -58,6 +69,18 @@ public class Altar {
             this.deity = Optional.empty();
         }
     }
+
+    //// HELPER METHODS ////
+
+    /**
+     * @param registryAccess the registry access
+     * @return the {@link Altar} registry
+     */
+    public static Registry<Altar> getRegistry(final RegistryAccess registryAccess) {
+        return registryAccess.registryOrThrow(RGRegistry.Keys.ALTARS);
+    }
+
+    //// GETTERS ////
 
     public boolean isEnabled() {
         return enabled;

@@ -1,3 +1,9 @@
+/**
+ * Copyright (c) 2024 Skyler James
+ * Permission is granted to use, modify, and redistribute this software, in parts or in whole,
+ * under the GNU LGPLv3 license (https://www.gnu.org/licenses/lgpl-3.0.en.html)
+ **/
+
 package rpggods;
 
 import com.mojang.serialization.Codec;
@@ -43,10 +49,29 @@ import rpggods.data.favor.Favor;
 import rpggods.data.favor.IFavor;
 import rpggods.data.perk.Perk;
 import rpggods.data.perk.action.PerkAction;
-import rpggods.data.perk.condition.BiomeCondition;
+import rpggods.data.perk.condition.AndCondition;
+import rpggods.data.perk.condition.CombatStartCondition;
+import rpggods.data.perk.condition.EffectStartCondition;
+import rpggods.data.perk.condition.EntityCondition;
+import rpggods.data.perk.condition.FavorLevelChangeCondition;
+import rpggods.data.perk.condition.ItemCondition;
+import rpggods.data.perk.condition.NearAltarCondition;
+import rpggods.data.perk.condition.PoseCondition;
+import rpggods.data.perk.condition.RandomTickCondition;
+import rpggods.data.perk.condition.RitualCondition;
+import rpggods.data.perk.condition.SolarCycleCondition;
+import rpggods.data.perk.condition.FalseCondition;
+import rpggods.data.perk.condition.LocationCondition;
+import rpggods.data.perk.condition.NotCondition;
+import rpggods.data.perk.condition.OrCondition;
 import rpggods.data.perk.condition.PatronCondition;
 import rpggods.data.perk.condition.PerkCondition;
+import rpggods.data.perk.condition.RandomChanceCondition;
+import rpggods.data.perk.condition.TimeCondition;
+import rpggods.data.perk.condition.TrueCondition;
 import rpggods.data.perk.condition.UnlockedCondition;
+import rpggods.data.perk.condition.UseBlockCondition;
+import rpggods.data.perk.condition.WeatherCondition;
 import rpggods.data.tameable.ITameable;
 import rpggods.entity.AltarEntity;
 import rpggods.item.AltarItem;
@@ -292,9 +317,38 @@ public final class RGRegistry {
             PERK_CONDITIONS.register(FMLJavaModLoadingContext.get().getModEventBus());
         }
 
-        public static final RegistryObject<Codec<BiomeCondition>> BIOME = PERK_CONDITION_TYPES.register("biome", () -> BiomeCondition.CODEC);
+        public static final RegistryObject<Codec<TrueCondition>> TRUE = PERK_CONDITION_TYPES.register("true", () -> TrueCondition.CODEC);
+        public static final RegistryObject<Codec<FalseCondition>> FALSE = PERK_CONDITION_TYPES.register("false", () -> FalseCondition.CODEC);
+        public static final RegistryObject<Codec<NotCondition>> NOT = PERK_CONDITION_TYPES.register("not", () -> NotCondition.CODEC);
+        public static final RegistryObject<Codec<AndCondition>> AND = PERK_CONDITION_TYPES.register("and", () -> AndCondition.CODEC);
+        public static final RegistryObject<Codec<OrCondition>> OR = PERK_CONDITION_TYPES.register("or", () -> OrCondition.CODEC);
+
+        public static final RegistryObject<Codec<RandomTickCondition>> RANDOM_TICK = PERK_CONDITION_TYPES.register("random_tick", () -> RandomTickCondition.CODEC);
+        public static final RegistryObject<Codec<TimeCondition>> TIME = PERK_CONDITION_TYPES.register("time", () -> TimeCondition.CODEC);
+        public static final RegistryObject<Codec<SolarCycleCondition>> SOLAR_CYCLE = PERK_CONDITION_TYPES.register("solar_cycle", () -> SolarCycleCondition.CODEC);
+        public static final RegistryObject<Codec<WeatherCondition>> WEATHER = PERK_CONDITION_TYPES.register("weather", () -> WeatherCondition.CODEC);
+        public static final RegistryObject<Codec<LocationCondition>> LOCATION = PERK_CONDITION_TYPES.register("location", () -> LocationCondition.CODEC);
+        public static final RegistryObject<Codec<RandomChanceCondition>> CHANCE = PERK_CONDITION_TYPES.register("chance", () -> RandomChanceCondition.CODEC);
+
+        public static final RegistryObject<Codec<ItemCondition>> ITEM = PERK_CONDITION_TYPES.register("item", () -> ItemCondition.CODEC);
         public static final RegistryObject<Codec<PatronCondition>> PATRON = PERK_CONDITION_TYPES.register("patron", () -> PatronCondition.CODEC);
         public static final RegistryObject<Codec<UnlockedCondition>> UNLOCKED = PERK_CONDITION_TYPES.register("unlocked", () -> UnlockedCondition.CODEC);
+        public static final RegistryObject<Codec<NearAltarCondition>> NEAR_ALTAR = PERK_CONDITION_TYPES.register("near_altar", () -> NearAltarCondition.CODEC);
+        public static final RegistryObject<Codec<PoseCondition>> POSE = PERK_CONDITION_TYPES.register("pose", () -> PoseCondition.CODEC);
+
+        public static final RegistryObject<Codec<EntityCondition.HurtPlayer>> ENTITY_HURT_PLAYER = PERK_CONDITION_TYPES.register("entity_hurt_player", () -> EntityCondition.HurtPlayer.CODEC);
+        public static final RegistryObject<Codec<EntityCondition.HurtByPlayer>> ENTITY_HURT_BY_PLAYER = PERK_CONDITION_TYPES.register("player_hurt_entity", () -> EntityCondition.HurtByPlayer.CODEC);
+        public static final RegistryObject<Codec<EntityCondition.KilledPlayer>> ENTITY_KILLED_PLAYER = PERK_CONDITION_TYPES.register("entity_kill_player", () -> EntityCondition.KilledPlayer.CODEC);
+        public static final RegistryObject<Codec<EntityCondition.KilledByPlayer>> ENTITY_KILLED_BY_PLAYER = PERK_CONDITION_TYPES.register("player_kill_entity", () -> EntityCondition.KilledByPlayer.CODEC);
+        public static final RegistryObject<Codec<EntityCondition.RiddenByPlayer>> ENTITY_RIDDEN_BY_PLAYER = PERK_CONDITION_TYPES.register("player_ride_entity", () -> EntityCondition.RiddenByPlayer.CODEC);
+        public static final RegistryObject<Codec<EntityCondition.InteractedByPlayer>> ENTITY_INTERACT_BY_PLAYER = PERK_CONDITION_TYPES.register("player_interact_entity", () -> EntityCondition.InteractedByPlayer.CODEC);
+
+        public static final RegistryObject<Codec<UseBlockCondition>> USE_BLOCK = PERK_CONDITION_TYPES.register("use_block", () -> UseBlockCondition.CODEC);
+        public static final RegistryObject<Codec<EffectStartCondition>> EFFECT_START = PERK_CONDITION_TYPES.register("effect_start", () -> EffectStartCondition.CODEC);
+        public static final RegistryObject<Codec<CombatStartCondition>> COMBAT_START = PERK_CONDITION_TYPES.register("combat_start", () -> CombatStartCondition.CODEC);
+        public static final RegistryObject<Codec<RitualCondition>> RITUAL = PERK_CONDITION_TYPES.register("ritual", () -> RitualCondition.CODEC);
+        public static final RegistryObject<Codec<FavorLevelChangeCondition>> FAVOR_LEVEL_CHANGE = PERK_CONDITION_TYPES.register("level_change", () -> FavorLevelChangeCondition.CODEC);
+
     }
 
     public static final class PerkActionReg {

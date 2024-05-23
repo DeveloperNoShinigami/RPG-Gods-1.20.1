@@ -145,6 +145,11 @@ tasks.named('jar', Jar).configure {
         ])
     }
 
+    // Include the LICENSE file
+    from('LICENSE') {
+        into ''
+    }
+
     // This is the preferred method to reobfuscate your jar file
     finalizedBy 'reobfJar'
 }
