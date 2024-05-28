@@ -61,7 +61,7 @@ public class Sacrifice {
     /**
      * Attempts to parse the deity from the given sacrifice id
      * @param sacrificeId the offering id in the form {@code namespace:deity/sacrificename}
-     * @return the resource location if found, otherwise {@link DeityWrapper#EMPTY}
+     * @return the resource location if found, otherwise {@link DeityContainer#EMPTY}
      */
     public static ResourceLocation getDeity(final ResourceLocation sacrificeId) {
         String path = sacrificeId.getPath();
@@ -69,7 +69,7 @@ public class Sacrifice {
         if(index > -1) {
             return new ResourceLocation(sacrificeId.getNamespace(), path.substring(0, index));
         }
-        return DeityWrapper.EMPTY.id;
+        return DeityContainer.EMPTY.id;
     }
 
     public ResourceLocation getEntity() {

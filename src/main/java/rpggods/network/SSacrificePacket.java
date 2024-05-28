@@ -14,7 +14,7 @@ import net.minecraftforge.fml.LogicalSide;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.network.NetworkEvent;
 import rpggods.RPGGods;
-import rpggods.data.deity.DeityWrapper;
+import rpggods.data.deity.DeityContainer;
 import rpggods.data.deity.Sacrifice;
 
 import java.util.Map;
@@ -26,6 +26,7 @@ import java.util.function.Supplier;
  * ResourceLocation IDs and Sacrifices
  **/
 // TODO use datapack registry instead
+@Deprecated
 public class SSacrificePacket {
 
     protected static final Codec<Map<ResourceLocation, Sacrifice>> CODEC = Codec.unboundedMap(ResourceLocation.CODEC, Sacrifice.CODEC);
@@ -85,12 +86,12 @@ public class SSacrificePacket {
         RPGGods.SACRIFICE_MAP.clear();
         RPGGods.SACRIFICE_MAP.putAll(data);
         // clear all deity helper sacrifices
-        for(DeityWrapper helper : RPGGods.DEITY_HELPER.values()) {
+        for(DeityContainer helper : RPGGods.DEITY_HELPER.values()) {
             helper.sacrificeMap.clear();
         }
         // add offerings to deity helper
         for(Map.Entry<ResourceLocation, Sacrifice> entry : RPGGods.SACRIFICE_MAP.entrySet()) {
-            RPGGods.DEITY_HELPER.computeIfAbsent(Sacrifice.getDeity(entry.getKey()), DeityWrapper::new).add(entry.getKey(), entry.getValue());
+            RPGGods.DEITY_HELPER.computeIfAbsent(Sacrifice.getDeity(entry.getKey()), DeityContainer::new).add(entry.getKey(), entry.getValue());
         }
     }
 }

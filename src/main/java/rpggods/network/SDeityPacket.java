@@ -25,6 +25,7 @@ import java.util.function.Supplier;
  * ResourceLocation IDs and Deities
  **/
 // TODO use datapack registry instead
+@Deprecated
 public class SDeityPacket {
 
     protected static final Codec<Map<ResourceLocation, Deity>> CODEC = Codec.unboundedMap(ResourceLocation.CODEC, Deity.CODEC);

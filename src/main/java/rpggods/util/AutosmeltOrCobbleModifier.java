@@ -19,7 +19,6 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeType;
-import net.minecraft.world.item.crafting.SmeltingRecipe;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.loot.LootContext;
@@ -32,7 +31,7 @@ import net.minecraftforge.items.ItemHandlerHelper;
 import net.minecraftforge.registries.ForgeRegistries;
 import rpggods.RGEvents;
 import rpggods.RPGGods;
-import rpggods.data.deity.DeityWrapper;
+import rpggods.data.deity.DeityContainer;
 import rpggods.data.favor.IFavor;
 import rpggods.data.perk.Perk;
 import rpggods.data.perk.action.PerkAction;
@@ -79,7 +78,7 @@ public class AutosmeltOrCobbleModifier extends LootModifier {
         // determine which of the mining effects can activate
         List<ResourceLocation> autosmelt = new ArrayList<>();
         List<ResourceLocation> unsmelt = new ArrayList<>();
-        for (DeityWrapper deity : RPGGods.DEITY_HELPER.values()) {
+        for (DeityContainer deity : RPGGods.DEITY_HELPER.values()) {
             autosmelt.addAll(deity.perkByTypeMap.getOrDefault(PerkAction.Type.AUTOSMELT, ImmutableList.of()));
             unsmelt.addAll(deity.perkByTypeMap.getOrDefault(PerkAction.Type.UNSMELT, ImmutableList.of()));
         }

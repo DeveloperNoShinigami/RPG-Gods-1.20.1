@@ -10,10 +10,11 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.util.INBTSerializable;
-import rpggods.data.deity.DeityWrapper;
+import rpggods.data.deity.DeityContainer;
 import rpggods.util.FavorChangedEvent;
 
 import javax.annotation.Nullable;
@@ -170,14 +171,14 @@ public class FavorLevel implements INBTSerializable<CompoundTag> {
      * @param decayRate the decay rate modifier, from -1 to 1
      */
     public void setDecayRate(final float decayRate) {
-        this.decayRate = decayRate;
+        this.decayRate = Mth.clamp(decayRate, -1.0F, 1.0F);
     }
 
     /**
      * @param perkBonus the perk chance modifier, from -1 to 1
      */
     public void setPerkBonus(float perkBonus) {
-        this.perkBonus = perkBonus;
+        this.perkBonus = Mth.clamp(perkBonus, -1.0F, 1.0F);
     }
 
     public void setEnabled(boolean enabled) {
@@ -212,7 +213,7 @@ public class FavorLevel implements INBTSerializable<CompoundTag> {
         long favorToNext = Math.min(calculateFavor(maxLevel), getFavorToNextLevel());
         String sFavorToNext = (favorToNext == 0 ? "--" : String.valueOf(favorToNext));
         playerIn.displayClientMessage(Component.translatable("favor.current_favor",
-                DeityWrapper.getName(deity), getFavor(), sFavorToNext, getLevel())
+                DeityContainer.getName(deity), getFavor(), sFavorToNext, getLevel())
                 .withStyle(ChatFormatting.LIGHT_PURPLE), false);
     }
 

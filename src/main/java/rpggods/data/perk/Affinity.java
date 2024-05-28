@@ -18,22 +18,22 @@ import java.util.Optional;
 
 public final class Affinity {
 
-    public static final Affinity EMPTY = new Affinity(Affinity.Type.PASSIVE, new ResourceLocation("null"));
+    public static final Affinity EMPTY = new Affinity(AffinityType.PASSIVE, new ResourceLocation("null"));
 
     public static final Codec<Affinity> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            Affinity.Type.CODEC.fieldOf("type").forGetter(Affinity::getType),
+            AffinityType.CODEC.fieldOf("type").forGetter(Affinity::getType),
             ResourceLocation.CODEC.fieldOf("entity").forGetter(Affinity::getEntity)
     ).apply(instance, Affinity::new));
 
-    private final Affinity.Type type;
+    private final AffinityType type;
     private final ResourceLocation entity;
 
-    public Affinity(Type type, ResourceLocation entity) {
+    public Affinity(AffinityType type, ResourceLocation entity) {
         this.type = type;
         this.entity = entity;
     }
 
-    public Type getType() {
+    public AffinityType getType() {
         return type;
     }
 
@@ -51,39 +51,4 @@ public final class Affinity {
         return getType().getDisplayDescription(entityName);
     }
 
-    public static enum Type implements StringRepresentable {
-        PASSIVE("passive"),
-        HOSTILE("hostile"),
-        FLEE("flee"),
-        TAME("tame");
-
-        private static final Codec<Affinity.Type> CODEC = Codec.STRING.comapFlatMap(Affinity.Type::fromString, Affinity.Type::getSerializedName).stable();
-        private final String name;
-
-        private Type(final String id) {
-            name = id;
-        }
-
-        public static DataResult<Affinity.Type> fromString(String id) {
-            for(final Affinity.Type t : values()) {
-                if(t.getSerializedName().equals(id)) {
-                    return DataResult.success(t);
-                }
-            }
-            return DataResult.error(() -> "Failed to parse affinity type '" + id + "'");
-        }
-
-        public Component getDisplayName() {
-            return Component.translatable("favor.affinity." + getSerializedName());
-        }
-
-        public Component getDisplayDescription(Component entityName) {
-            return Component.translatable("favor.affinity." + getSerializedName() + ".description", entityName);
-        }
-
-        @Override
-        public String getSerializedName() {
-            return name;
-        }
-    }
 }

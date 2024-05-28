@@ -14,7 +14,7 @@ import net.minecraftforge.fml.LogicalSide;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.network.NetworkEvent;
 import rpggods.RPGGods;
-import rpggods.data.deity.DeityWrapper;
+import rpggods.data.deity.DeityContainer;
 import rpggods.data.deity.Offering;
 
 import java.util.Map;
@@ -26,6 +26,7 @@ import java.util.function.Supplier;
  * ResourceLocation IDs and Offerings
  **/
 // TODO use datapack registry instead
+@Deprecated
 public class SOfferingPacket {
 
     protected static final Codec<Map<ResourceLocation, Offering>> CODEC = Codec.unboundedMap(ResourceLocation.CODEC, Offering.CODEC);
@@ -85,12 +86,12 @@ public class SOfferingPacket {
         RPGGods.OFFERING_MAP.clear();
         RPGGods.OFFERING_MAP.putAll(data);
         // clear all deity helper offerings
-        for(DeityWrapper helper : RPGGods.DEITY_HELPER.values()) {
+        for(DeityContainer helper : RPGGods.DEITY_HELPER.values()) {
             helper.offeringMap.clear();
         }
         // add offerings to deity helper
         for(Map.Entry<ResourceLocation, Offering> entry : RPGGods.OFFERING_MAP.entrySet()) {
-            RPGGods.DEITY_HELPER.computeIfAbsent(Offering.getDeity(entry.getKey()), DeityWrapper::new).add(entry.getKey(), entry.getValue());
+            RPGGods.DEITY_HELPER.computeIfAbsent(Offering.getDeity(entry.getKey()), DeityContainer::new).add(entry.getKey(), entry.getValue());
         }
     }
 }

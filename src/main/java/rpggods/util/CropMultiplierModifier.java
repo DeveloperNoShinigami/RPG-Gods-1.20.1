@@ -27,7 +27,7 @@ import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.registries.ForgeRegistries;
 import rpggods.RGEvents;
 import rpggods.RPGGods;
-import rpggods.data.deity.DeityWrapper;
+import rpggods.data.deity.DeityContainer;
 import rpggods.data.favor.IFavor;
 import rpggods.data.perk.Perk;
 import rpggods.data.perk.action.PerkAction;
@@ -65,7 +65,7 @@ public class CropMultiplierModifier extends LootModifier {
         }
         // determine which of the mining effects can activate
         List<ResourceLocation> cropHarvest = new ArrayList<>();
-        for (DeityWrapper deity : RPGGods.DEITY_HELPER.values()) {
+        for (DeityContainer deity : RPGGods.DEITY_HELPER.values()) {
             cropHarvest.addAll(deity.perkByTypeMap.getOrDefault(PerkAction.Type.CROP_HARVEST, ImmutableList.of()));
         }
         // make sure this is an ore mined by a non-creative player

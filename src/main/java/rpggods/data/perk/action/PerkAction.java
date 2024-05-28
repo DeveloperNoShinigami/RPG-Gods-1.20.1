@@ -6,12 +6,13 @@
 
 package rpggods.data.perk.action;
 
+import com.mojang.datafixers.Products;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.particles.ParticleOptions;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -20,6 +21,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.ExtraCodecs;
 import net.minecraft.util.RandomSource;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.effect.MobEffect;
@@ -47,10 +49,6 @@ import net.minecraft.world.item.trading.MerchantOffer;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.BonemealableBlock;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.event.entity.living.BabyEntitySpawnEvent;
@@ -58,25 +56,127 @@ import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.eventbus.api.Event;
 import net.minecraftforge.registries.ForgeRegistries;
 import rpggods.RGEvents;
+import rpggods.RGRegistry;
 import rpggods.RPGGods;
 import rpggods.data.deity.Altar;
 import rpggods.data.deity.Deity;
-import rpggods.data.deity.DeityWrapper;
+import rpggods.data.deity.DeityContainer;
 import rpggods.data.favor.FavorLevel;
 import rpggods.data.favor.IFavor;
 import rpggods.data.perk.Affinity;
+import rpggods.data.perk.AffinityType;
 import rpggods.data.perk.Patron;
 import rpggods.data.perk.Perk;
 import rpggods.data.tameable.ITameable;
 import rpggods.util.FavorChangedEvent;
+import rpggods.util.RGCodecUtils;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 
-public final class PerkAction {
+public abstract class PerkAction {
 
-    public static final PerkAction EMPTY = new PerkAction(PerkAction.Type.FAVOR, Optional.empty(),
-            Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(),
-            Optional.empty(), Optional.empty(), Optional.empty(), true);
+    public static final Codec<PerkAction> DIRECT_CODEC = ExtraCodecs.lazyInitializedCodec(() -> RGRegistry.PERK_ACTION_TYPES_SUPPLIER.get().getCodec())
+            .dispatch(PerkAction::getCodec, Function.identity());
+    public static final Codec<List<PerkAction>> LIST_CODEC = RGCodecUtils.listOrElementCodec(DIRECT_CODEC);
+
+    private final List<Component> description = new ArrayList<>();
+    private final List<Component> descriptionView = Collections.unmodifiableList(description);
+
+    protected final boolean isHidden;
+
+    public PerkAction(final boolean isHidden) {
+        this.isHidden = isHidden;
+    }
+
+    /**
+     * @param context the {@link PerkActionContext} with parameters to facilitate the action
+     * @return true if the perk action applied successfully
+     */
+    public abstract boolean apply(final PerkActionContext context);
+
+    /**
+     * @param registryAccess the Registry Access instance
+     * @return the name of this perk action as a {@link Component}
+     */
+    public abstract List<Component> createDescription(final RegistryAccess registryAccess);
+
+    /**
+     * @return the Codec used to encode/decode this {@link PerkAction}
+     * @see rpggods.RGRegistry.PerkActionReg
+     */
+    public abstract Codec<? extends PerkAction> getCodec();
+
+    /**
+     * @param registryAccess the registry access
+     * @return a list of text components that describe this modifier condition
+     */
+    public final List<Component> getDescription(final RegistryAccess registryAccess) {
+        if(description.isEmpty()) {
+            description.addAll(createDescription(registryAccess));
+        }
+        return descriptionView;
+    }
+
+    //// HELPER METHODS ////
+
+    /**
+     * Simplifies codec creation, especially if no other fields are added
+     * @param instance the record codec builder with additional parameters, if any
+     */
+    protected static <T extends PerkAction> Products.P1<RecordCodecBuilder.Mu<T>, Boolean> codecStart(RecordCodecBuilder.Instance<T> instance) {
+        return instance.group(Codec.BOOL.optionalFieldOf("hidden", false).forGetter(PerkAction::isHidden));
+    }
+
+    /**
+     * Reads a {@link MobEffectInstance} from a {@link CompoundTag}, but allows the mob effect to be
+     * specified by a {@code "Potion"} tag with the registry name of the {@link MobEffect} instead of the byte ID,
+     * and with the default value of {@code "ShowParticles"} set to {@code false} when not specified
+     * @param tag the compound tag
+     * @return the {@link MobEffectInstance} in the argument tag, if any
+     * @see MobEffectInstance#load(CompoundTag)
+     */
+    public static Optional<MobEffectInstance> readEffectInstance(final CompoundTag tag) {
+        final CompoundTag mobEffectTag = tag.copy();
+        if(tag.contains("Potion", 8)) {
+            // "show particles" will default to false if not specified
+            if(!mobEffectTag.contains("ShowParticles")) {
+                mobEffectTag.putBoolean("ShowParticles", false);
+            }
+            MobEffect potion = ForgeRegistries.MOB_EFFECTS.getValue(new ResourceLocation(mobEffectTag.getString("Potion")));
+            if(potion != null) {
+                mobEffectTag.putByte("Id", (byte) MobEffect.getId(potion));
+            }
+        }
+        return Optional.of(MobEffectInstance.load(mobEffectTag));
+    }
+
+    /**
+     * Formats the given float as a percentage. Example usage:
+     * {@code input: -0.9, output: -90%};
+     * {@code input: 0.25: output: +25%};
+     * {@code input: 1.2: output: +120%}
+     * @param percent a percent in the range {@code [-1.0, inf)}
+     * @return a text component containing a signed percentage
+     */
+    public static Component createPercentageComponent(final float percent) {
+        StringBuilder builder = new StringBuilder("");
+        // add prefix
+        if(!(percent < 0.0F)) {
+            builder.append("+");
+        }
+        // add number and percent
+        builder.append(
+                String.format("%.2f", percent * 100.0F)
+                .replace("0*$", "")
+                .replace("\\.$", ""));
+        builder.append("%");
+        // create component
+        return Component.literal(builder.toString());
+    }
 
     // TODO dispatch codec for PerkAction
 
@@ -93,31 +193,7 @@ public final class PerkAction {
             Codec.BOOL.optionalFieldOf("hidden", false).forGetter(PerkAction::isHidden)
     ).apply(instance, PerkAction::new));
 
-    private final PerkAction.Type type;
-    private final Optional<String> string;
-    private final Optional<ResourceLocation> id;
-    private final Optional<CompoundTag> tag;
-    private final Optional<ItemStack> item;
-    private final Optional<Long> favor;
-    private final Optional<Float> multiplier;
-    private final Optional<Affinity> affinity;
-    private final Optional<Patron> patron;
-    private final boolean hidden;
 
-    public PerkAction(Type type, Optional<String> string, Optional<ResourceLocation> id, Optional<CompoundTag> tag,
-                      Optional<ItemStack> item, Optional<Long> favor, Optional<Float> multiplier,
-                      Optional<Affinity> affinity, Optional<Patron> patron, boolean hidden) {
-        this.type = type;
-        this.string = string;
-        this.id = id;
-        this.tag = tag;
-        this.item = item;
-        this.favor = favor;
-        this.multiplier = multiplier;
-        this.affinity = affinity;
-        this.patron = patron;
-        this.hidden = hidden;
-    }
 
     /**
      * Runs a single Perk without any of the preliminary checks or cooldown.
@@ -160,7 +236,7 @@ public final class PerkAction {
                 }
                 return false;
             case AFFINITY:
-                if(getAffinity().isPresent() && entity.isPresent() && data.isPresent() && getAffinity().get().getType() == Affinity.Type.TAME) {
+                if(getAffinity().isPresent() && entity.isPresent() && data.isPresent() && getAffinity().get().getType() == AffinityType.TAME) {
                     LazyOptional<ITameable> tameable = entity.get().getCapability(RPGGods.TAMEABLE);
                     if(tameable.isPresent()) {
                         if(tameable.orElse(null).setTamedBy(player)) {
@@ -341,162 +417,8 @@ public final class PerkAction {
         return false;
     }
 
-    public static Optional<MobEffectInstance> readEffectInstance(final CompoundTag tag) {
-        if(tag.contains("Potion", 8)) {
-            final CompoundTag nbt = tag.copy();
-            // "show particles" will default to false if not specified
-            if(!nbt.contains("ShowParticles")) {
-                nbt.putBoolean("ShowParticles", false);
-            }
-            MobEffect potion = ForgeRegistries.MOB_EFFECTS.getValue(new ResourceLocation(nbt.getString("Potion")));
-            if(potion != null) {
-                nbt.putByte("Id", (byte) MobEffect.getId(potion));
-                return Optional.of(MobEffectInstance.load(nbt));
-            }
-        }
-        return Optional.empty();
-    }
-
-
-
-    /**
-     * Attempts to summon an entity near the player
-     * @param worldIn the world
-     * @param playerIn the player
-     * @param entityTag the CompoundNBT of the entity
-     * @param distance the maximum distance from the player to summon. Using 0 will skip the usual canSpawn checks.
-     * @return the entity if it was summoned, or an empty optional
-     **/
-    public static Optional<Entity> summonEntityNearPlayer(final Level worldIn, final Player playerIn,
-                                                          final Optional<CompoundTag> entityTag, final float distance) {
-        if(entityTag.isPresent() && worldIn instanceof ServerLevelAccessor) {
-            final Optional<EntityType<?>> entityType = EntityType.by(entityTag.get());
-            if(entityType.isPresent()) {
-                Entity entity = entityType.get().create(worldIn);
-                final boolean waterMob = entity instanceof WaterAnimal || entity instanceof Drowned || entity instanceof Guardian
-                        || (entity instanceof Mob && ((Mob)entity).getNavigation() instanceof WaterBoundPathNavigation);
-                // find a place to spawn the entity
-                RandomSource rand = playerIn.getRandom();
-                BlockPos spawnPos;
-                for(int range = 1 + Math.round(distance), attempts = Math.min(32, range * 3); attempts > 0; attempts--) {
-                    if(range > 1) {
-                        spawnPos = playerIn.blockPosition().offset(rand.nextInt(range) - rand.nextInt(range), rand.nextInt(2) - rand.nextInt(2), rand.nextInt(range) - rand.nextInt(range));
-                    } else {
-                        spawnPos = playerIn.blockPosition().above();
-                    }
-                    // check if this is a valid position
-                    boolean canSpawnHere = (range == 1)
-                            || SpawnPlacements.checkSpawnRules(entityType.get(), (ServerLevelAccessor)worldIn, MobSpawnType.SPAWN_EGG, spawnPos, rand)
-                            || (waterMob && worldIn.getBlockState(spawnPos).is(Blocks.WATER))
-                            || (!waterMob && worldIn.getBlockState(spawnPos.below()).canOcclude()
-                            && worldIn.getBlockState(spawnPos).getMaterial() == Material.AIR
-                            && worldIn.getBlockState(spawnPos.above()).getMaterial() == Material.AIR);
-                    if(canSpawnHere) {
-                        // spawn the entity at this position and finish
-                        entity.load(entityTag.get());
-                        entity.setPos(spawnPos.getX() + 0.5D, spawnPos.getY() + 0.01D, spawnPos.getZ() + 0.5D);
-                        worldIn.addFreshEntity(entity);
-                        return Optional.of(entity);
-                    }
-                }
-                entity.discard();
-            }
-        }
-        return Optional.empty();
-    }
-
-    /**
-     * Checks random blocks in a radius until either a growable crop has been found
-     * and changed, or no crops were found in a limited number of attempts.
-     * @param player the player
-     * @param favor the player's favor
-     * @param amount the amount of growth to add (can be negative to remove growth)
-     * @return whether a crop was found and its age was changed
-     **/
-    public static boolean growCropsNearPlayer(final Player player, final IFavor favor, final int amount) {
-        if(amount == 0) {
-            return false;
-        }
-        final IntegerProperty[] AGES = new IntegerProperty[] {
-                BlockStateProperties.AGE_1, BlockStateProperties.AGE_15, BlockStateProperties.AGE_2,
-                BlockStateProperties.AGE_3, BlockStateProperties.AGE_5, BlockStateProperties.AGE_7
-        };
-        final RandomSource rand = player.level.getRandom();
-        final int maxAttempts = 10;
-        final int variationY = 1;
-        final int radius = 5;
-        int attempts = 0;
-        // if there are effects that should change growth states, find a crop to affect
-        while (attempts++ <= maxAttempts) {
-            // get random block in radius
-            final int x1 = rand.nextInt(radius * 2) - radius;
-            final int y1 = rand.nextInt(variationY * 2) - variationY;
-            final int z1 = rand.nextInt(radius * 2) - radius;
-            final BlockPos blockpos = player.blockPosition().offset(x1, y1, z1);
-            final BlockState state = player.level.getBlockState(blockpos);
-            // if the block can be grown, grow it and return
-            if (state.getBlock() instanceof BonemealableBlock) {
-                // determine which age property applies to this state
-                for(final IntegerProperty AGE : AGES) {
-                    if(state.hasProperty(AGE)) {
-                        // attempt to update the age (add or subtract)
-                        int oldAge = state.getValue(AGE);
-                        int newAge = Math.max(0, oldAge + amount);
-                        if(AGE.getPossibleValues().contains(newAge)) {
-                            // update the block age
-                            player.level.setBlock(blockpos, state.setValue(AGE, newAge), 2);
-                            // spawn particles
-                            if(player.level instanceof ServerLevel) {
-                                ParticleOptions particle = (amount > 0) ? ParticleTypes.HAPPY_VILLAGER : ParticleTypes.ANGRY_VILLAGER;
-                                ((ServerLevel)player.level).sendParticles(particle, blockpos.getX() + 0.5D, blockpos.getY() + 0.25D, blockpos.getZ() + 0.5D, 10, 0.5D, 0.5D, 0.5D, 0);
-                            }
-                            return true;
-                        }
-                    }
-                }
-            }
-        }
-        return false;
-    }
-
-    public Type getType() {
-        return type;
-    }
-
-    public Optional<ResourceLocation> getId() {
-        return id;
-    }
-
-    public Optional<String> getString() {
-        return string;
-    }
-
-    public Optional<CompoundTag> getTag() {
-        return tag;
-    }
-
-    public Optional<ItemStack> getItem() {
-        return item;
-    }
-
-    public Optional<Long> getFavor() {
-        return favor;
-    }
-
-    public Optional<Float> getMultiplier() {
-        return multiplier;
-    }
-
-    public Optional<Affinity> getAffinity() {
-        return affinity;
-    }
-
-    public Optional<Patron> getPatron() {
-        return patron;
-    }
-
     public boolean isHidden() {
-        return hidden;
+        return isHidden;
     }
 
     @Override
@@ -572,7 +494,7 @@ public final class PerkAction {
                 if(getMultiplier().isPresent() && getId().isPresent()) {
                     // format multiplier as signed bonus
                     String prefix = (getMultiplier().get() > 0) ? "+" : "";
-                    return Component.translatable("favor.perk.type.add_decay.description.full", prefix + getMultiplier().get(), DeityWrapper.getName(getId().get()));
+                    return Component.translatable("favor.perk.type.add_decay.description.full", prefix + getMultiplier().get(), DeityContainer.getName(getId().get()));
                 }
                 return Component.empty();
             case DURABILITY:
@@ -600,7 +522,7 @@ public final class PerkAction {
             case PATRON:
                 if(getPatron().isPresent()) {
                     if (getPatron().get().getDeity().isPresent()) {
-                        Component deityName = DeityWrapper.getName(getPatron().get().getDeity().get());
+                        Component deityName = DeityContainer.getName(getPatron().get().getDeity().get());
                         return Component.translatable("favor.perk.type.patron.description.add", deityName);
                     }
                     return Component.translatable("favor.perk.type.patron.description.remove");
@@ -609,7 +531,7 @@ public final class PerkAction {
             case UNLOCK:
                 if(getId().isPresent()) {
                     ResourceLocation deityId = getId().get();
-                    Component deityName = DeityWrapper.getName(deityId);
+                    Component deityName = DeityContainer.getName(deityId);
                     Altar altar = RPGGods.ALTAR_MAP.getOrDefault(deityId, Altar.EMPTY);
                     String suffix = altar.isFemale() ? "female" : "male";
                     return Component.translatable("favor.perk.type.unlock.description." + suffix, deityName);
@@ -626,28 +548,29 @@ public final class PerkAction {
     }
 
     // TODO dispatch codec for Perk Action
+    @Deprecated
     public static enum Type implements StringRepresentable {
-        FUNCTION("function"),
-        POTION("potion"),
-        SUMMON("summon"),
-        ITEM("item"),
-        FAVOR("favor"),
-        AFFINITY("affinity"),
-        ARROW_DAMAGE("arrow_damage"),
-        ARROW_EFFECT("arrow_effect"),
-        ARROW_COUNT("arrow_count"),
-        OFFSPRING("offspring"),
-        CROP_GROWTH("crop_growth"),
-        CROP_HARVEST("crop_harvest"),
-        AUTOSMELT("autosmelt"),
-        UNSMELT("unsmelt"),
-        SPECIAL_PRICE("special_price"),
-        DURABILITY("durability"),
-        DAMAGE("damage"),
-        PATRON("patron"),
-        UNLOCK("unlock"),
-        ADD_DECAY("add_decay"),
-        XP("xp");
+        @Deprecated FUNCTION("function"),
+        @Deprecated POTION("potion"),
+        @Deprecated SUMMON("summon"),
+        @Deprecated ITEM("item"),
+        @Deprecated FAVOR("favor"),
+        @Deprecated AFFINITY("affinity"),
+        @Deprecated ARROW_DAMAGE("arrow_damage"),
+        @Deprecated ARROW_EFFECT("arrow_effect"),
+        @Deprecated ARROW_COUNT("arrow_count"),
+        @Deprecated OFFSPRING("offspring"),
+        @Deprecated CROP_GROWTH("crop_growth"),
+        @Deprecated CROP_HARVEST("crop_harvest"),
+        @Deprecated AUTOSMELT("autosmelt"),
+        @Deprecated UNSMELT("unsmelt"),
+        @Deprecated SPECIAL_PRICE("special_price"),
+        @Deprecated DURABILITY("durability"),
+        @Deprecated DAMAGE("damage"),
+        @Deprecated PATRON("patron"),
+        @Deprecated UNLOCK("unlock"),
+        @Deprecated ADD_DECAY("add_decay"),
+        @Deprecated XP("xp");
 
         private static final Codec<PerkAction.Type> CODEC = Codec.STRING.comapFlatMap(PerkAction.Type::fromString, PerkAction.Type::getSerializedName).stable();
 
@@ -663,7 +586,7 @@ public final class PerkAction {
                     return DataResult.success(t);
                 }
             }
-            return DataResult.error("Failed to parse perk data type '" + id + "'");
+            return DataResult.error(() -> "Failed to parse perk data type '" + id + "'");
         }
 
         /**

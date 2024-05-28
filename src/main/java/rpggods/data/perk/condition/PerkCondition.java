@@ -83,16 +83,6 @@ public abstract class PerkCondition {
         return descriptionView;
     }
 
-    protected static Optional<CompoundTag> parseTag(final String tagString) {
-        try {
-            CompoundTag tag = TagParser.parseTag(tagString);
-            return Optional.of(tag);
-        } catch (CommandSyntaxException e) {
-            RPGGods.LOGGER.error("Failed to parse NBT in PerkCondition\n" + e.getMessage());
-        }
-        return Optional.empty();
-    }
-
     /**
      * @param resourceKey a resource key
      * @param <T> the resource key type

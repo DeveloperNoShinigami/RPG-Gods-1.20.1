@@ -65,7 +65,7 @@ import rpggods.RPGGods;
 import rpggods.block.AltarLightBlock;
 import rpggods.data.deity.Altar;
 import rpggods.data.deity.Deity;
-import rpggods.data.deity.DeityWrapper;
+import rpggods.data.deity.DeityContainer;
 import rpggods.data.favor.Favor;
 import rpggods.data.favor.IFavor;
 import rpggods.data.perk.condition.PerkCondition;
@@ -310,7 +310,7 @@ public class AltarEntity extends LivingEntity implements ContainerListener {
             // check if altar has a deity
             if(getDeity().isPresent()) {
                 // check if there are any perk conditions for "ritual"
-                DeityWrapper helper = RPGGods.DEITY_HELPER.computeIfAbsent(getDeity().get(), DeityWrapper::new);
+                DeityContainer helper = RPGGods.DEITY_HELPER.computeIfAbsent(getDeity().get(), DeityContainer::new);
                 if(!helper.perkByConditionMap.getOrDefault(PerkCondition.Type.RITUAL, ImmutableList.of()).isEmpty()) {
                     // onPerformRitual
                     RGEvents.performRitual(this, getDeity().get());
@@ -589,7 +589,7 @@ public class AltarEntity extends LivingEntity implements ContainerListener {
         setBlockSlot(new ItemStack(altar.getItems().getBlock().asItem()));
         // custom name
         if (altar.getDeity().isPresent()) {
-            setCustomName(DeityWrapper.getName(altarId));
+            setCustomName(DeityContainer.getName(altarId));
         } else if (altar.getName().isPresent()) {
             setCustomName(Component.literal(altar.getName().get()));
         }
@@ -620,7 +620,7 @@ public class AltarEntity extends LivingEntity implements ContainerListener {
             // determine string to save deity name
             ResourceLocation deityId = altar.getDeity().get();
             deity = Optional.ofNullable(RPGGods.DEITY_MAP.get(deityId));
-            customName = DeityWrapper.getName(altarId);
+            customName = DeityContainer.getName(altarId);
             compoundTag.putString(KEY_DEITY, deityId.toString());
         }
         // write custom name

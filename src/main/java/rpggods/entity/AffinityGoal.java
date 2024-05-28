@@ -36,6 +36,7 @@ import rpggods.data.favor.Favor;
 import rpggods.data.favor.FavorRange;
 import rpggods.data.favor.IFavor;
 import rpggods.data.perk.Affinity;
+import rpggods.data.perk.AffinityType;
 import rpggods.data.perk.Perk;
 import rpggods.data.tameable.ITameable;
 import rpggods.data.tameable.Tameable;
@@ -89,10 +90,10 @@ public class AffinityGoal {
                 boolean isHostile = isHostile(creature, f);
                 // log error if there are conflicts
                 if(isPassive && isHostile) {
-                    final Map<Affinity.Type, List<ResourceLocation>> affinityMap = RPGGods.AFFINITY.getOrDefault(id, ImmutableMap.of());
-                    final List<FavorRange> passivePerks = affinityMap.getOrDefault(Affinity.Type.PASSIVE, ImmutableList.of())
+                    final Map<AffinityType, List<ResourceLocation>> affinityMap = RPGGods.AFFINITY.getOrDefault(id, ImmutableMap.of());
+                    final List<FavorRange> passivePerks = affinityMap.getOrDefault(AffinityType.PASSIVE, ImmutableList.of())
                             .stream().map(r -> RPGGods.PERK_MAP.getOrDefault(id, Perk.EMPTY)).map(Perk::getRange).toList();
-                    final List<FavorRange> hostilePerks = affinityMap.getOrDefault(Affinity.Type.HOSTILE, ImmutableList.of())
+                    final List<FavorRange> hostilePerks = affinityMap.getOrDefault(AffinityType.HOSTILE, ImmutableList.of())
                             .stream().map(r -> RPGGods.PERK_MAP.getOrDefault(id, Perk.EMPTY)).map(Perk::getRange).toList();;
                     RPGGods.LOGGER.error("Conflicting affinity perks for " + id + " ; Hostile is " + hostilePerks + " and Passive is " + passivePerks);
                     return ImmutablePair.of(false, false);
@@ -111,7 +112,7 @@ public class AffinityGoal {
     public static boolean isPassive(final LivingEntity creature, final IFavor playerFavor) {
         final ResourceLocation id = ForgeRegistries.ENTITY_TYPES.getKey(creature.getType());
         Perk p;
-        for(ResourceLocation r : RPGGods.AFFINITY.getOrDefault(id, ImmutableMap.of()).getOrDefault(Affinity.Type.PASSIVE, ImmutableList.of())) {
+        for(ResourceLocation r : RPGGods.AFFINITY.getOrDefault(id, ImmutableMap.of()).getOrDefault(AffinityType.PASSIVE, ImmutableList.of())) {
             p = RPGGods.PERK_MAP.get(r);
             if(p != null && p.getRange().isInRange(playerFavor)) {
                 return true;
@@ -128,7 +129,7 @@ public class AffinityGoal {
     public static boolean isHostile(final LivingEntity creature, final IFavor playerFavor) {
         final ResourceLocation id = ForgeRegistries.ENTITY_TYPES.getKey(creature.getType());
         Perk p;
-        for(ResourceLocation r : RPGGods.AFFINITY.getOrDefault(id, ImmutableMap.of()).getOrDefault(Affinity.Type.HOSTILE, ImmutableList.of())) {
+        for(ResourceLocation r : RPGGods.AFFINITY.getOrDefault(id, ImmutableMap.of()).getOrDefault(AffinityType.HOSTILE, ImmutableList.of())) {
             p = RPGGods.PERK_MAP.get(r);
             if(p != null && p.getRange().isInRange(playerFavor)) {
                 return true;
@@ -206,7 +207,7 @@ public class AffinityGoal {
             final ResourceLocation id = ForgeRegistries.ENTITY_TYPES.getKey(creature.getType());
             return e -> {
                 if(e instanceof Player && e != creature.getLastHurtByMob() && !isOwnerOrTeam(creature, e)) {
-                    List<ResourceLocation> perks = RPGGods.AFFINITY.getOrDefault(id, ImmutableMap.of()).getOrDefault(Affinity.Type.FLEE, ImmutableList.of());
+                    List<ResourceLocation> perks = RPGGods.AFFINITY.getOrDefault(id, ImmutableMap.of()).getOrDefault(AffinityType.FLEE, ImmutableList.of());
                     if(perks.size() > 0) {
                         IFavor favor = RPGGods.getFavor(e).orElse(Favor.EMPTY);
                         if(favor.isEnabled()) {

@@ -31,11 +31,12 @@ import org.apache.logging.log4j.Logger;
 import rpggods.client.RGClientEvents;
 import rpggods.data.deity.Altar;
 import rpggods.data.deity.Deity;
-import rpggods.data.deity.DeityWrapper;
+import rpggods.data.deity.DeityContainer;
 import rpggods.data.deity.Offering;
 import rpggods.data.deity.Sacrifice;
 import rpggods.data.favor.IFavor;
 import rpggods.data.perk.Affinity;
+import rpggods.data.perk.AffinityType;
 import rpggods.data.perk.Perk;
 import rpggods.data.tameable.ITameable;
 import rpggods.network.CUpdateAltarPacket;
@@ -71,9 +72,9 @@ public class RPGGods {
             () -> PROTOCOL_VERSION, PROTOCOL_VERSION::equals, PROTOCOL_VERSION::equals);
 
     // Map of Deity ID to DeityHelper
-    public static final Map<ResourceLocation, DeityWrapper> DEITY_HELPER = new HashMap<>();
+    public static final Map<ResourceLocation, DeityContainer> DEITY_HELPER = new HashMap<>();
     // Map of Entity ID to Perk IDs of perks that affect affinity
-    public static final Map<ResourceLocation, Map<Affinity.Type, List<ResourceLocation>>> AFFINITY = new HashMap<>();
+    public static final Map<ResourceLocation, Map<AffinityType, List<ResourceLocation>>> AFFINITY = new HashMap<>();
 
     // Reloadable data resource listeners
     protected static final CodecJsonDataManager<Altar> ALTAR_JSON_MANAGER = new CodecJsonDataManager<>("deity/altar", Altar.CODEC);

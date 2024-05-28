@@ -8,14 +8,20 @@ package rpggods.data.deity;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.mojang.serialization.Codec;
+import net.minecraft.core.Registry;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraftforge.fml.util.thread.EffectiveSide;
 import net.minecraftforge.registries.ForgeRegistries;
+import org.jetbrains.annotations.ApiStatus;
+import rpggods.RGRegistry;
 import rpggods.RPGGods;
 import rpggods.data.favor.FavorRange;
 import rpggods.data.perk.Affinity;
+import rpggods.data.perk.AffinityType;
 import rpggods.data.perk.Perk;
 import rpggods.data.perk.action.PerkAction;
 import rpggods.data.perk.condition.PerkCondition;
@@ -34,9 +40,9 @@ import java.util.Optional;
  * to reduce expensive searches and sorts after data has been loaded.
  */
 @Immutable
-public class DeityWrapper {
+public class DeityContainer {
 
-    public static final DeityWrapper EMPTY = DeityWrapper.builder(new ResourceLocation("null")).build();
+    public static final DeityContainer EMPTY = DeityContainer.builder(new ResourceLocation("null")).build();
 
     /** The ResourceLocation ID **/
     public final ResourceLocation id;
@@ -47,21 +53,15 @@ public class DeityWrapper {
     /** Map of Entity ID to Sacrifice(s) **/
     public final Map<ResourceLocation, List<ResourceLocation>> sacrificeMap;
     /** Map of PerkCondition.Type to Perk(s). May contain multiple instances of the same Perk. **/
-    public final Map<PerkCondition.Type, List<ResourceLocation>> perkByConditionMap;
+    public final Map<Codec<? extends PerkCondition>, List<ResourceLocation>> perkByConditionMap;
     /** Map of PerkData.Type to Perk(s) **/
-    public final Map<PerkAction.Type, List<ResourceLocation>> perkByTypeMap;
+    public final Map<Codec<? extends PerkAction>, List<ResourceLocation>> perkByTypeMap;
     /** List of all Perks **/
     public final List<ResourceLocation> perkList;
 
     //// CONSTRUCTOR ////
 
-    private DeityWrapper(ResourceLocation id,
-                         List<ResourceLocation> altarList,
-                         Map<ResourceLocation, List<ResourceLocation>> offeringMap,
-                         Map<ResourceLocation, List<ResourceLocation>> sacrificeMap,
-                         Map<PerkCondition.Type, List<ResourceLocation>> perkByConditionMap,
-                         Map<PerkAction.Type, List<ResourceLocation>> perkByTypeMap,
-                         List<ResourceLocation> perkList) {
+    private DeityContainer(RegistryAccess registryAccess, ResourceLocation id) {
         this.id = id;
         this.altarList = ImmutableList.copyOf(altarList);
         this.offeringMap = ImmutableMap.copyOf(offeringMap);
@@ -74,8 +74,8 @@ public class DeityWrapper {
     /**
      * @param id the ID of the associated Deity
      */
-    public static DeityWrapper.Builder builder(final ResourceLocation id) {
-        return new DeityWrapper.Builder(id);
+    public static DeityContainer.Builder builder(final ResourceLocation id) {
+        return new DeityContainer.Builder(id);
     }
 
     //// GETTERS ////
@@ -96,7 +96,7 @@ public class DeityWrapper {
         return sacrificeMap;
     }
 
-    public Map<PerkCondition.Type, List<ResourceLocation>> getPerkByConditionMap() {
+    public Map<Codec<? extends PerkCondition>, List<ResourceLocation>> getPerkByConditionMap() {
         return perkByConditionMap;
     }
 
@@ -133,6 +133,62 @@ public class DeityWrapper {
         sb.append(" sacrifices[").append(sacrifices).append("]");
         sb.append(" perks[").append(perkList.size()).append("]");
         return sb.toString();
+    }
+
+    //// REGISTRY ////
+
+    private static final Map<ResourceLocation, DeityContainer> REGISTRY = new HashMap<>();
+    private static final Map<ResourceLocation, DeityContainer> CLIENT_REGISTRY = new HashMap<>();
+
+    /**
+     * @param isClientSide true to use the client side registry, necessary for caching when using LAN servers
+     * @return the {@link DeityContainer} registry
+     */
+    private static Map<ResourceLocation, DeityContainer> getRegistry(final boolean isClientSide) {
+        if(isClientSide) {
+            return CLIENT_REGISTRY;
+        }
+        return REGISTRY;
+    }
+
+    /**
+     * @param registryAccess the registry access
+     * @param id the {@link Deity} ID
+     * @return the cached {@link DeityContainer}
+     */
+    public static DeityContainer getOrCreate(final RegistryAccess registryAccess, final ResourceLocation id) {
+        // get existing entry
+        final Map<ResourceLocation, DeityContainer> registry = getRegistry(EffectiveSide.get().isClient());
+        final DeityContainer entry = registry.get(id);
+        if(entry != null) {
+            return entry;
+        }
+        // create new entry
+        final DeityContainer container = new DeityContainer(registryAccess, id);
+        registry.put(id, container);
+        return container;
+    }
+
+    /**
+     * Loads all values in the {@link Deity} registry and creates {@link DeityContainer}s for each one.
+     * @param registryAccess the registry access
+     */
+    @ApiStatus.Internal
+    public static void populate(final RegistryAccess registryAccess) {
+        // load golem registry
+        final Registry<Deity> registry = registryAccess.registryOrThrow(RGRegistry.Keys.DEITIES);
+        // resolve golem containers when the server starts to avoid lag spikes later
+        for(ResourceLocation id : registry.keySet()) {
+            DeityContainer.getOrCreate(registryAccess, id);
+        }
+    }
+
+    /**
+     * Clears the {@link DeityContainer} registry
+     */
+    @ApiStatus.Internal
+    public static void reset() {
+        getRegistry(EffectiveSide.get().isClient()).clear();
     }
 
     //// BUILDER ////
@@ -197,14 +253,14 @@ public class DeityWrapper {
                 PerkAction.Type type = action.getType();
                 this.perkByTypeMap.computeIfAbsent(type, r -> new ArrayList<>()).add(id);
                 action.getAffinity().ifPresent(affinity -> RPGGods.AFFINITY
-                        .computeIfAbsent(affinity.getEntity(), entityId -> new EnumMap<>(Affinity.Type.class))
+                        .computeIfAbsent(affinity.getEntity(), entityId -> new EnumMap<>(AffinityType.class))
                         .computeIfAbsent(affinity.getType(), affinityType -> new ArrayList<>()).add(id));
             }
             return this;
         }
 
-        public DeityWrapper build() {
-            return new DeityWrapper(id, altarList, offeringMap, sacrificeMap, perkByConditionMap, perkByTypeMap, perkList);
+        public DeityContainer build() {
+            return new DeityContainer(id, altarList, offeringMap, sacrificeMap, perkByConditionMap, perkByTypeMap, perkList);
         }
     }
 }

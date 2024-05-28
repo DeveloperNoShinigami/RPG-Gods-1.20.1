@@ -35,7 +35,7 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import rpggods.RPGGods;
 import rpggods.data.deity.Altar;
 import rpggods.data.deity.Deity;
-import rpggods.data.deity.DeityWrapper;
+import rpggods.data.deity.DeityContainer;
 import rpggods.data.deity.Offering;
 import rpggods.data.deity.Sacrifice;
 import rpggods.data.favor.FavorLevel;
@@ -201,14 +201,14 @@ public class FavorScreen extends AbstractContainerScreen<FavorContainerMenu> {
 
         // Iterate over all deities using their deity helper.
         // This allows us to skip items that were invalidated by the deity helper, such as empty offerings or perks.
-        for (DeityWrapper deityWrapper : RPGGods.DEITY_HELPER.values()) {
+        for (DeityContainer deityContainer : RPGGods.DEITY_HELPER.values()) {
             // skip deities that are not enabled or not unlocked
-            Deity d = deityWrapper.getDeity().orElse(Deity.EMPTY);
+            Deity d = deityContainer.getDeity().orElse(Deity.EMPTY);
             if (!d.isEnabled() || !favor.getFavor(d.getId()).isEnabled()) {
                 continue;
             }
             // add deity to list
-            deityList.add(deityWrapper.id);
+            deityList.add(deityContainer.id);
             // add entries to all lists for this deity
             offeringMap.put(d.getId(), new ArrayList<>());
             tradeMap.put(d.getId(), new ArrayList<>());
@@ -219,9 +219,9 @@ public class FavorScreen extends AbstractContainerScreen<FavorContainerMenu> {
             for (int i = favorLevel.getMin(), j = favorLevel.getMax(); i <= j; i++) {
                 perkSubMap.put(i, new ArrayList<>());
             }
-            perkMap.put(deityWrapper.id, perkSubMap);
+            perkMap.put(deityContainer.id, perkSubMap);
             // add all offerings to map using deity helper (so we can skip offerings that were invalid)
-            for (List<ResourceLocation> entry : deityWrapper.offeringMap.values()) {
+            for (List<ResourceLocation> entry : deityContainer.offeringMap.values()) {
                 for (ResourceLocation offeringId : entry) {
                     Optional<Offering> optional = Optional.ofNullable(RPGGods.OFFERING_MAP.get(offeringId));
                     optional.ifPresent(offering -> {
@@ -233,7 +233,7 @@ public class FavorScreen extends AbstractContainerScreen<FavorContainerMenu> {
                 }
             }
             // add all sacrifices to map using deity helper (so we can skip sacrifices that were invalid)
-            for (List<ResourceLocation> entry : deityWrapper.sacrificeMap.values()) {
+            for (List<ResourceLocation> entry : deityContainer.sacrificeMap.values()) {
                 for (ResourceLocation sacrificeId : entry) {
                     Optional<Sacrifice> optional = Optional.ofNullable(RPGGods.SACRIFICE_MAP.get(sacrificeId));
                     optional.ifPresent(sacrifice -> {
@@ -244,7 +244,7 @@ public class FavorScreen extends AbstractContainerScreen<FavorContainerMenu> {
             }
             // add all non-hidden perks to map using deity helper (so we can skip perks that were invalid)
             Perk perk;
-            for (ResourceLocation entry : deityWrapper.perkList) {
+            for (ResourceLocation entry : deityContainer.perkList) {
                 Optional<Perk> optional = Optional.ofNullable(RPGGods.PERK_MAP.get(entry));
                 if (optional.isPresent()) {
                     perk = optional.get();

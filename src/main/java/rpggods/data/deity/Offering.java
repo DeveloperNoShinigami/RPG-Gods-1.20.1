@@ -109,7 +109,7 @@ public class Offering {
      * Attempts to parse the deity from the given offering id
      *
      * @param offeringId the offering id in the form {@code namespace:deity/offering}
-     * @return the resource location if found, otherwise {@link DeityWrapper#EMPTY}
+     * @return the resource location if found, otherwise {@link DeityContainer#EMPTY}
      */
     public static ResourceLocation getDeity(final ResourceLocation offeringId) {
         String path = offeringId.getPath();
@@ -117,7 +117,7 @@ public class Offering {
         if (index > -1) {
             return new ResourceLocation(offeringId.getNamespace(), path.substring(0, index));
         }
-        return DeityWrapper.EMPTY.id;
+        return DeityContainer.EMPTY.id;
     }
 
     /**

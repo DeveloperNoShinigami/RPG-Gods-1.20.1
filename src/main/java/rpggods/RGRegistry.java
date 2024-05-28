@@ -48,7 +48,28 @@ import rpggods.data.deity.Sacrifice;
 import rpggods.data.favor.Favor;
 import rpggods.data.favor.IFavor;
 import rpggods.data.perk.Perk;
+import rpggods.data.perk.action.AffinityAction;
+import rpggods.data.perk.action.ArrowCountAction;
+import rpggods.data.perk.action.ArrowEffectAction;
+import rpggods.data.perk.action.AutosmeltAction;
+import rpggods.data.perk.action.CropAgeAction;
+import rpggods.data.perk.action.CropYieldAction;
+import rpggods.data.perk.action.FavorAmountAction;
+import rpggods.data.perk.action.FavorDecayAction;
+import rpggods.data.perk.action.FunctionAction;
+import rpggods.data.perk.action.GiveItemAction;
+import rpggods.data.perk.action.ArrowDamageAmountAction;
+import rpggods.data.perk.action.DamageAmountAction;
+import rpggods.data.perk.action.ItemDurabilityAction;
+import rpggods.data.perk.action.MerchantPriceAction;
+import rpggods.data.perk.action.UnsmeltAction;
+import rpggods.data.perk.action.XpValueAction;
+import rpggods.data.perk.action.OffspringCountAction;
+import rpggods.data.perk.action.PatronAction;
 import rpggods.data.perk.action.PerkAction;
+import rpggods.data.perk.action.PotionAction;
+import rpggods.data.perk.action.SummonAction;
+import rpggods.data.perk.action.UnlockAction;
 import rpggods.data.perk.condition.AndCondition;
 import rpggods.data.perk.condition.CombatStartCondition;
 import rpggods.data.perk.condition.EffectStartCondition;
@@ -356,6 +377,29 @@ public final class RGRegistry {
             PERK_ACTION_TYPES.register(FMLJavaModLoadingContext.get().getModEventBus());
             PERK_ACTIONS.register(FMLJavaModLoadingContext.get().getModEventBus());
         }
+
+        public static final RegistryObject<Codec<AffinityAction>> AFFINITY = PERK_ACTION_TYPES.register("affinity", () -> AffinityAction.CODEC);
+        public static final RegistryObject<Codec<ArrowCountAction>> ARROW_COUNT = PERK_ACTION_TYPES.register("arrow_count", () -> ArrowCountAction.CODEC);
+        public static final RegistryObject<Codec<ArrowDamageAmountAction>> ARROW_DAMAGE = PERK_ACTION_TYPES.register("arrow_damage", () -> ArrowDamageAmountAction.CODEC);
+        public static final RegistryObject<Codec<ArrowEffectAction>> ARROW_EFFECT = PERK_ACTION_TYPES.register("arrow_effect", () -> ArrowEffectAction.CODEC);
+        public static final RegistryObject<Codec<AutosmeltAction>> AUTOSMELT = PERK_ACTION_TYPES.register("autosmelt", () -> AutosmeltAction.CODEC);
+        public static final RegistryObject<Codec<CropAgeAction>> CROP_AGE = PERK_ACTION_TYPES.register("crop_age", () -> CropAgeAction.CODEC);
+        public static final RegistryObject<Codec<CropYieldAction>> CROP_YIELD = PERK_ACTION_TYPES.register("crop_yield", () -> CropYieldAction.CODEC);
+        public static final RegistryObject<Codec<DamageAmountAction>> DAMAGE = PERK_ACTION_TYPES.register("damage", () -> DamageAmountAction.CODEC);
+        public static final RegistryObject<Codec<ItemDurabilityAction>> DURABILITY = PERK_ACTION_TYPES.register("durability", () -> ItemDurabilityAction.CODEC);
+        public static final RegistryObject<Codec<FavorAmountAction>> FAVOR_AMOUNT = PERK_ACTION_TYPES.register("favor", () -> FavorAmountAction.CODEC);
+        public static final RegistryObject<Codec<FavorDecayAction>> FAVOR_DECAY = PERK_ACTION_TYPES.register("favor_decay", () -> FavorDecayAction.CODEC);
+        public static final RegistryObject<Codec<FunctionAction>> FUNCTION = PERK_ACTION_TYPES.register("function", () -> FunctionAction.CODEC);
+        public static final RegistryObject<Codec<GiveItemAction>> ITEM = PERK_ACTION_TYPES.register("item", () -> GiveItemAction.CODEC);
+        public static final RegistryObject<Codec<MerchantPriceAction>> MERCHANT_PRICE = PERK_ACTION_TYPES.register("merchant_price", () -> MerchantPriceAction.CODEC);
+        public static final RegistryObject<Codec<OffspringCountAction>> OFFSPRING = PERK_ACTION_TYPES.register("offspring", () -> OffspringCountAction.CODEC);
+        public static final RegistryObject<Codec<PatronAction>> PATRON = PERK_ACTION_TYPES.register("patron", () -> PatronAction.CODEC);
+        public static final RegistryObject<Codec<PotionAction>> POTION = PERK_ACTION_TYPES.register("potion", () -> PotionAction.CODEC);
+        public static final RegistryObject<Codec<SummonAction>> SUMMON = PERK_ACTION_TYPES.register("summon", () -> SummonAction.CODEC);
+        public static final RegistryObject<Codec<UnlockAction>> UNLOCK = PERK_ACTION_TYPES.register("unlock", () -> UnlockAction.CODEC);
+        public static final RegistryObject<Codec<UnsmeltAction>> UNSMELT = PERK_ACTION_TYPES.register("unsmelt", () -> UnsmeltAction.CODEC);
+        public static final RegistryObject<Codec<XpValueAction>> XP = PERK_ACTION_TYPES.register("xp", () -> XpValueAction.CODEC);
+
     }
 
     public static final class PerkReg {

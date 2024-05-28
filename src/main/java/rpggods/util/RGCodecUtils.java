@@ -25,6 +25,7 @@ import net.minecraft.core.RegistryCodecs;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.TagParser;
 import net.minecraft.tags.TagKey;
+import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.item.Item;
@@ -33,6 +34,7 @@ import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -105,12 +107,22 @@ public final class RGCodecUtils {
             ForgeRegistries.POTIONS.getCodec().optionalFieldOf("potion").forGetter(o -> Optional.ofNullable(o.potion)),
             RGCodecUtils.NBT_PREDICATE_CODEC.optionalFieldOf("nbt", NbtPredicate.ANY).forGetter(o -> o.nbt)
     ).apply(instance, (tag, items, count, durability, enchantments, storedEnchantments, potion, nbt) -> new ItemPredicate(tag.orElse(null), items.orElse(null), count, durability, enchantments.toArray(new EnchantmentPredicate[0]), storedEnchantments.toArray(new EnchantmentPredicate[0]), potion.orElse(null), nbt)));
+    /** {@link MobEffectInstance} codec **/
+    public static final Codec<MobEffectInstance> MOB_EFFECT_INSTANCE_CODEC = RecordCodecBuilder.create(instance -> instance.group(
+            ForgeRegistries.MOB_EFFECTS.getCodec().fieldOf("id").forGetter(MobEffectInstance::getEffect),
+            Codec.INT.optionalFieldOf("duration", 0).forGetter(MobEffectInstance::getDuration),
+            Codec.INT.optionalFieldOf("amplifier", 0).forGetter(MobEffectInstance::getAmplifier),
+            Codec.BOOL.optionalFieldOf("ambient", false).forGetter(MobEffectInstance::isAmbient),
+            Codec.BOOL.optionalFieldOf("visible", true).forGetter(MobEffectInstance::isVisible),
+            Codec.BOOL.optionalFieldOf("show_icon", true).forGetter(MobEffectInstance::showIcon)
+    ).apply(instance, MobEffectInstance::new));
 
     private static final BiMap<String, Pose> POSE_MAP = new ImmutableBiMap.Builder<String, Pose>()
             .putAll(Arrays
                     .stream(Pose.values())
                     .collect(Collectors.toMap(pose -> pose.name().toLowerCase(), pose -> pose)))
             .build();
+    /** {@link {Pose}} codec **/
     public static final Codec<Pose> POSE_CODEC = Codec.STRING.comapFlatMap((string) -> {
         final Pose pose = POSE_MAP.get(string);
         if(null == pose) {
