@@ -79,8 +79,8 @@ public class AutosmeltOrCobbleModifier extends LootModifier {
         List<ResourceLocation> autosmelt = new ArrayList<>();
         List<ResourceLocation> unsmelt = new ArrayList<>();
         for (DeityContainer deity : RPGGods.DEITY_HELPER.values()) {
-            autosmelt.addAll(deity.perkByTypeMap.getOrDefault(PerkAction.Type.AUTOSMELT, ImmutableList.of()));
-            unsmelt.addAll(deity.perkByTypeMap.getOrDefault(PerkAction.Type.UNSMELT, ImmutableList.of()));
+            autosmelt.addAll(deity.perkByActionMap.getOrDefault(PerkAction.Type.AUTOSMELT, ImmutableList.of()));
+            unsmelt.addAll(deity.perkByActionMap.getOrDefault(PerkAction.Type.UNSMELT, ImmutableList.of()));
         }
         // make sure this is an ore mined by a non-creative player
         if (entity instanceof Player && !entity.isSpectator() && !((Player) entity).isCreative()

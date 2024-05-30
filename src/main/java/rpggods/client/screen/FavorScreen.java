@@ -244,7 +244,7 @@ public class FavorScreen extends AbstractContainerScreen<FavorContainerMenu> {
             }
             // add all non-hidden perks to map using deity helper (so we can skip perks that were invalid)
             Perk perk;
-            for (ResourceLocation entry : deityContainer.perkList) {
+            for (ResourceLocation entry : deityContainer.perkMap) {
                 Optional<Perk> optional = Optional.ofNullable(RPGGods.PERK_MAP.get(entry));
                 if (optional.isPresent()) {
                     perk = optional.get();

@@ -15,11 +15,13 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.nbt.Tag;
 import net.minecraft.nbt.TagParser;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.registries.ForgeRegistries;
 import rpggods.RPGGods;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -105,12 +107,35 @@ public class Offering {
         this.tradeTag = temp;
     }
 
+    //// HELPER METHODS ////
+
+    /**
+     * @param entry the registry entry
+     * @param deityId the deity ID
+     * @return true if the given registry entry should be associated with the given deity
+     */
+    public static boolean isFor(final Map.Entry<ResourceKey<Offering>, Offering> entry, final ResourceLocation deityId) {
+        // validate offering data
+        final Offering offering = entry.getValue();
+        if (offering.getFavor() == 0 && offering.getFunction().isEmpty() && offering.getTrade().isEmpty()) {
+            return false;
+        }
+        // validate resource location
+        final ResourceLocation offeringId = entry.getKey().location();
+        if(!offeringId.getNamespace().equals(deityId.getNamespace()) || !offeringId.getPath().contains(deityId.getPath() + "/")) {
+            return false;
+        }
+        // all checks passed
+        return true;
+    }
+
     /**
      * Attempts to parse the deity from the given offering id
      *
      * @param offeringId the offering id in the form {@code namespace:deity/offering}
      * @return the resource location if found, otherwise {@link DeityContainer#EMPTY}
      */
+    @Deprecated
     public static ResourceLocation getDeity(final ResourceLocation offeringId) {
         String path = offeringId.getPath();
         int index = path.indexOf("/");
@@ -222,6 +247,8 @@ public class Offering {
         }
         return rec;
     }
+
+    //// GETTERS ////
 
     public ItemStack getAccept() {
         return accept;

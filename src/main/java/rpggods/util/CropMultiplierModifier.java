@@ -66,7 +66,7 @@ public class CropMultiplierModifier extends LootModifier {
         // determine which of the mining effects can activate
         List<ResourceLocation> cropHarvest = new ArrayList<>();
         for (DeityContainer deity : RPGGods.DEITY_HELPER.values()) {
-            cropHarvest.addAll(deity.perkByTypeMap.getOrDefault(PerkAction.Type.CROP_HARVEST, ImmutableList.of()));
+            cropHarvest.addAll(deity.perkByActionMap.getOrDefault(PerkAction.Type.CROP_HARVEST, ImmutableList.of()));
         }
         // make sure this is an ore mined by a non-creative player
         if (entity instanceof Player && !entity.isSpectator() && !((Player) entity).isCreative()

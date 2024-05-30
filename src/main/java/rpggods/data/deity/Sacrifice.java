@@ -10,10 +10,12 @@ import com.google.common.collect.ImmutableList;
 import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import rpggods.data.perk.condition.PerkCondition;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -59,10 +61,31 @@ public class Sacrifice {
     }
 
     /**
+     * @param entry the registry entry
+     * @param deityId the deity ID
+     * @return true if the given registry entry should be associated with the given deity
+     */
+    public static boolean isFor(final Map.Entry<ResourceKey<Sacrifice>, Sacrifice> entry, final ResourceLocation deityId) {
+        // validate sacrifice data
+        final Sacrifice sacrifice = entry.getValue();
+        if (sacrifice.getFavor() == 0 && sacrifice.getFunction().isEmpty()) {
+            return false;
+        }
+        // validate resource location
+        final ResourceLocation sacrificeId = entry.getKey().location();
+        if(!sacrificeId.getNamespace().equals(deityId.getNamespace()) || !sacrificeId.getPath().contains(deityId.getPath() + "/")) {
+            return false;
+        }
+        // all checks passed
+        return true;
+    }
+
+    /**
      * Attempts to parse the deity from the given sacrifice id
      * @param sacrificeId the offering id in the form {@code namespace:deity/sacrificename}
      * @return the resource location if found, otherwise {@link DeityContainer#EMPTY}
      */
+    @Deprecated
     public static ResourceLocation getDeity(final ResourceLocation sacrificeId) {
         String path = sacrificeId.getPath();
         int index = path.indexOf("/");

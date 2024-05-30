@@ -10,6 +10,7 @@ import com.google.common.collect.ImmutableList;
 import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import rpggods.data.favor.FavorLevel;
 import rpggods.data.favor.FavorRange;
@@ -17,6 +18,7 @@ import rpggods.data.perk.action.PerkAction;
 import rpggods.data.perk.condition.PerkCondition;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -69,6 +71,28 @@ public final class Perk {
         }
         this.category = category;
     }
+
+    /**
+     * @param entry the registry entry
+     * @param deityId the deity ID
+     * @return true if the given registry entry should be associated with the given deity
+     */
+    public static boolean isFor(final Map.Entry<ResourceKey<Perk>, Perk> entry, final ResourceLocation deityId) {
+        // validate perk data
+        final Perk perk = entry.getValue();
+        if (FavorRange.EMPTY.equals(perk.getRange()) || perk.getActions().isEmpty()) {
+            return false;
+        }
+        // validate resource location
+        final ResourceLocation perkId = entry.getKey().location();
+        if(!perkId.getNamespace().equals(deityId.getNamespace()) || !perkId.getPath().contains(deityId.getPath() + "/")) {
+            return false;
+        }
+        // all checks passed
+        return true;
+    }
+
+    //// GETTERS ////
 
     public PerkIcon getIcon() {
         return icon;

@@ -302,7 +302,7 @@ public class RGEvents {
             for (DeityContainer helper : RPGGods.DEITY_HELPER.values()) {
                 boolean deityEnabled = favor.getFavor(helper.id).isEnabled();
                 if (deityEnabled) {
-                    perks.addAll(helper.perkByTypeMap.getOrDefault(type, ImmutableList.of()));
+                    perks.addAll(helper.perkByActionMap.getOrDefault(type, ImmutableList.of()));
                 }
             }
             // shuffle perks

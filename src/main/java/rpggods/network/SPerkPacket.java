@@ -89,9 +89,9 @@ public class SPerkPacket {
         RPGGods.AFFINITY.clear();
         // clear all deity helper perks
         for(DeityContainer helper : RPGGods.DEITY_HELPER.values()) {
-            helper.perkList.clear();
+            helper.perkMap.clear();
             helper.perkByConditionMap.clear();
-            helper.perkByTypeMap.clear();
+            helper.perkByActionMap.clear();
         }
         // add perks to deity helper
         for(Map.Entry<ResourceLocation, Perk> entry : RPGGods.PERK_MAP.entrySet()) {

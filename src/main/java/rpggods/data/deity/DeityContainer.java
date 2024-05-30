@@ -6,32 +6,29 @@
 
 package rpggods.data.deity;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.mojang.serialization.Codec;
 import net.minecraft.core.Registry;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.item.Item;
 import net.minecraftforge.fml.util.thread.EffectiveSide;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.jetbrains.annotations.ApiStatus;
 import rpggods.RGRegistry;
 import rpggods.RPGGods;
-import rpggods.data.favor.FavorRange;
-import rpggods.data.perk.Affinity;
-import rpggods.data.perk.AffinityType;
 import rpggods.data.perk.Perk;
 import rpggods.data.perk.action.PerkAction;
 import rpggods.data.perk.condition.PerkCondition;
 
 import javax.annotation.concurrent.Immutable;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.EnumMap;
 import java.util.HashMap;
-import java.util.List;
+import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -42,40 +39,133 @@ import java.util.Optional;
 @Immutable
 public class DeityContainer {
 
-    public static final DeityContainer EMPTY = DeityContainer.builder(new ResourceLocation("null")).build();
-
     /** The ResourceLocation ID **/
-    public final ResourceLocation id;
-    /** List of Altars **/
-    public final List<ResourceLocation> altarList;
+    private final ResourceLocation id;
+    /** The Deity instance **/
+    private final Deity deity;
+    /** Map of Altar ID to Altar(s) **/
+    private final Map<ResourceLocation, Altar> altarMap;
     /** Map of Item ID to Offering(s) **/
-    public final Map<ResourceLocation, List<ResourceLocation>> offeringMap;
+    private final Map<ResourceLocation, Map<ResourceLocation, Offering>> offeringMap;
     /** Map of Entity ID to Sacrifice(s) **/
-    public final Map<ResourceLocation, List<ResourceLocation>> sacrificeMap;
-    /** Map of PerkCondition.Type to Perk(s). May contain multiple instances of the same Perk. **/
-    public final Map<Codec<? extends PerkCondition>, List<ResourceLocation>> perkByConditionMap;
-    /** Map of PerkData.Type to Perk(s) **/
-    public final Map<Codec<? extends PerkAction>, List<ResourceLocation>> perkByTypeMap;
-    /** List of all Perks **/
-    public final List<ResourceLocation> perkList;
+    private final Map<ResourceLocation, Map<ResourceLocation, Sacrifice>> sacrificeMap;
+    /** Map of Perk ID to Perk **/
+    private final Map<ResourceLocation, Perk> perkMap;
+    /** Map of Perk Condition Type to Perk(s). May contain multiple instances of the same Perk. **/
+    private final Map<Codec<? extends PerkCondition>, Map<ResourceLocation, Perk>> perkByConditionMap;
+    /** Map of Perk Action Type to Perk(s) **/
+    private final Map<Codec<? extends PerkAction>, Map<ResourceLocation, Perk>> perkByActionMap;
 
     //// CONSTRUCTOR ////
 
     private DeityContainer(RegistryAccess registryAccess, ResourceLocation id) {
+        // cache ID
         this.id = id;
-        this.altarList = ImmutableList.copyOf(altarList);
-        this.offeringMap = ImmutableMap.copyOf(offeringMap);
-        this.sacrificeMap = ImmutableMap.copyOf(sacrificeMap);
-        this.perkByConditionMap = Collections.unmodifiableMap(new EnumMap<>(perkByConditionMap));
-        this.perkByTypeMap = Collections.unmodifiableMap(new EnumMap<>(perkByTypeMap));
-        this.perkList = ImmutableList.copyOf(perkList);
-    }
 
-    /**
-     * @param id the ID of the associated Deity
-     */
-    public static DeityContainer.Builder builder(final ResourceLocation id) {
-        return new DeityContainer.Builder(id);
+        // load registries
+        final Registry<Deity> deityRegistry = registryAccess.registryOrThrow(RGRegistry.Keys.DEITIES);
+        final Registry<Altar> altarRegistry = registryAccess.registryOrThrow(RGRegistry.Keys.ALTARS);
+        final Registry<Offering> offeringRegistry = registryAccess.registryOrThrow(RGRegistry.Keys.OFFERINGS);
+        final Registry<Sacrifice> sacrificeRegistry = registryAccess.registryOrThrow(RGRegistry.Keys.SACRIFICES);
+        final Registry<Perk> perkRegistry = registryAccess.registryOrThrow(RGRegistry.Keys.PERKS);
+
+        // cache deity
+        this.deity = deityRegistry
+                .getOptional(id)
+                .orElseThrow(() -> new IllegalStateException("[DeityContainer] Missing deity with ID \"" + id + "\""));
+
+        // create map of altar ID to altar for this deity
+        {
+            Map<ResourceLocation, Altar> altarBuilder = new HashMap<>();
+            for (Map.Entry<ResourceKey<Altar>, Altar> entry : altarRegistry.entrySet()) {
+                // validate altar and add to builder
+                if (Altar.isFor(entry, id)) {
+                    altarBuilder.put(entry.getKey().location(), entry.getValue());
+                }
+            }
+            // cache altars
+            this.altarMap = Collections.unmodifiableMap(altarBuilder);
+        }
+
+        // create map of item ID to offering(s) for this deity
+        {
+            Map<ResourceLocation, Map<ResourceLocation, Offering>> offeringBuilder = new HashMap<>();
+            for (Map.Entry<ResourceKey<Offering>, Offering> entry : offeringRegistry.entrySet()) {
+                // validate offering and add to builder
+                if (Offering.isFor(entry, id)) {
+                    ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(entry.getValue().getAccept().getItem());
+                    offeringBuilder.computeIfAbsent(itemId, r -> new HashMap<>())
+                            .put(entry.getKey().location(), entry.getValue());
+                }
+            }
+            // convert map values to unmodifiable lists
+            offeringBuilder.replaceAll((key, value) -> Collections.unmodifiableMap(value));
+            // cache offerings
+            this.offeringMap = Collections.unmodifiableMap(offeringBuilder);
+        }
+
+        // create map of entity ID to sacrifice(s)
+        {
+            Map<ResourceLocation, Map<ResourceLocation, Sacrifice>> sacrificeBuilder = new HashMap<>();
+            for (Map.Entry<ResourceKey<Sacrifice>, Sacrifice> entry : sacrificeRegistry.entrySet()) {
+                // validate sacrifice and add to builder
+                if (Sacrifice.isFor(entry, id)) {
+                    sacrificeBuilder.computeIfAbsent(entry.getValue().getEntity(), r -> new HashMap<>())
+                            .put(entry.getKey().location(), entry.getValue());
+                }
+            }
+            // convert map values to unmodifiable lists
+            sacrificeBuilder.replaceAll((key, value) -> Collections.unmodifiableMap(value));
+            // cache sacrifices
+            this.sacrificeMap = Collections.unmodifiableMap(sacrificeBuilder);
+        }
+
+        // create map of perk ID to perk
+        {
+            Map<ResourceLocation, Perk> perkBuilder = new HashMap<>();
+            for (Map.Entry<ResourceKey<Perk>, Perk> entry : perkRegistry.entrySet()) {
+                // validate perk and add to builder
+                if (Perk.isFor(entry, id)) {
+                    perkBuilder.put(entry.getKey().location(), entry.getValue());
+                }
+            }
+            // cache perks
+            this.perkMap = Collections.unmodifiableMap(perkBuilder);
+        }
+
+        // create map of perk condition type to perk(s)
+        {
+            Map<Codec<? extends PerkCondition>, Map<ResourceLocation, Perk>> perkByConditionBuilder = new IdentityHashMap<>();
+            for(Map.Entry<ResourceLocation, Perk> entry : this.perkMap.entrySet()) {
+                // iterate each condition in the perk and add to builder
+                for(PerkCondition condition : entry.getValue().getConditions()) {
+                    Codec<? extends PerkCondition> conditionType = condition.getCodec();
+                    perkByConditionBuilder.computeIfAbsent(conditionType, c -> new HashMap<>())
+                            .put(entry.getKey(), entry.getValue());
+                }
+            }
+            // convert map values to unmodifiable lists
+            perkByConditionBuilder.replaceAll((key, value) -> Collections.unmodifiableMap(value));
+            // cache perk by condition map
+            this.perkByConditionMap = Collections.unmodifiableMap(perkByConditionBuilder);
+        }
+
+        // create map of perk action type to perk(s)
+        {
+            Map<Codec<? extends PerkAction>, Map<ResourceLocation, Perk>> perkByActionBuilder = new IdentityHashMap<>();
+            for(Map.Entry<ResourceLocation, Perk> entry : this.perkMap.entrySet()) {
+                // iterate each condition in the perk and add to builder
+                for(PerkAction action : entry.getValue().getActions()) {
+                    Codec<? extends PerkAction> actionType = action.getCodec();
+                    perkByActionBuilder.computeIfAbsent(actionType, c -> new HashMap<>())
+                            .put(entry.getKey(), entry.getValue());
+                }
+            }
+            // convert map values to unmodifiable lists
+            perkByActionBuilder.replaceAll((key, value) -> Collections.unmodifiableMap(value));
+            // cache perk by condition map
+            this.perkByActionMap = Collections.unmodifiableMap(perkByActionBuilder);
+        }
     }
 
     //// GETTERS ////
@@ -84,28 +174,46 @@ public class DeityContainer {
         return id;
     }
 
-    public List<ResourceLocation> getAltarList() {
-        return altarList;
+    public Map<ResourceLocation, Altar> getAltars() {
+        return altarMap;
     }
 
-    public Map<ResourceLocation, List<ResourceLocation>> getOfferingMap() {
+    public Map<ResourceLocation, Map<ResourceLocation, Offering>> getOfferings() {
         return offeringMap;
     }
 
-    public Map<ResourceLocation, List<ResourceLocation>> getSacrificeMap() {
+    public Map<ResourceLocation, Offering> getOfferingsByItem(final Item item) {
+        final ResourceLocation key = ForgeRegistries.ITEMS.getKey(item);
+        return offeringMap.getOrDefault(key, ImmutableMap.of());
+    }
+
+    public Map<ResourceLocation, Map<ResourceLocation, Sacrifice>> getSacrifices() {
         return sacrificeMap;
     }
 
-    public Map<Codec<? extends PerkCondition>, List<ResourceLocation>> getPerkByConditionMap() {
+    public Map<ResourceLocation, Sacrifice> getSacrificesByEntity(final EntityType<?> entityType) {
+        final ResourceLocation key = ForgeRegistries.ENTITY_TYPES.getKey(entityType);
+        return sacrificeMap.getOrDefault(key, ImmutableMap.of());
+    }
+
+    public Map<Codec<? extends PerkCondition>, Map<ResourceLocation, Perk>> getPerkByConditionMap() {
         return perkByConditionMap;
     }
 
-    public Map<PerkAction.Type, List<ResourceLocation>> getPerkByTypeMap() {
-        return perkByTypeMap;
+    public Map<Codec<? extends PerkAction>, Map<ResourceLocation, Perk>> getPerkByActionMap() {
+        return perkByActionMap;
     }
 
-    public List<ResourceLocation> getPerkList() {
-        return perkList;
+    public Map<ResourceLocation, Perk> getPerks() {
+        return perkMap;
+    }
+
+    public Map<ResourceLocation, Perk> getPerksByCondition(final Codec<? extends PerkCondition> condition) {
+        return perkByConditionMap.getOrDefault(condition, ImmutableMap.of());
+    }
+
+    public Map<ResourceLocation, Perk> getPerksByAction(final Codec<? extends PerkAction> action) {
+        return perkByActionMap.getOrDefault(action, ImmutableMap.of());
     }
 
     public Optional<Deity> getDeity() {
@@ -119,19 +227,19 @@ public class DeityContainer {
     @Override
     public String toString() {
         int offerings = 0;
-        for(List<ResourceLocation> o : offeringMap.values()) {
+        for(Map<ResourceLocation, Offering> o : offeringMap.values()) {
             offerings += o.size();
         }
         int sacrifices = 0;
-        for(List<ResourceLocation> s : sacrificeMap.values()) {
+        for(Map<ResourceLocation, Sacrifice> s : sacrificeMap.values()) {
             sacrifices += s.size();
         }
         final StringBuilder sb = new StringBuilder("DeityHelper:");
         sb.append(" id[").append(id).append("]");
-        sb.append(" altars[").append(altarList.size()).append("]");
+        sb.append(" altars[").append(altarMap.size()).append("]");
         sb.append(" offerings[").append(offerings).append("]");
         sb.append(" sacrifices[").append(sacrifices).append("]");
-        sb.append(" perks[").append(perkList.size()).append("]");
+        sb.append(" perks[").append(perkMap.size()).append("]");
         return sb.toString();
     }
 
@@ -187,80 +295,7 @@ public class DeityContainer {
      * Clears the {@link DeityContainer} registry
      */
     @ApiStatus.Internal
-    public static void reset() {
+    public static void clearCache() {
         getRegistry(EffectiveSide.get().isClient()).clear();
-    }
-
-    //// BUILDER ////
-
-    public static class Builder {
-        private final ResourceLocation id;
-        private final List<ResourceLocation> altarList = new ArrayList<>();
-        private final Map<ResourceLocation, List<ResourceLocation>> offeringMap = new HashMap<>();
-        private final Map<ResourceLocation, List<ResourceLocation>> sacrificeMap = new HashMap<>();
-        private final Map<PerkCondition.Type, List<ResourceLocation>> perkByConditionMap = new EnumMap<>(PerkCondition.Type.class);
-        private final Map<PerkAction.Type, List<ResourceLocation>> perkByTypeMap = new EnumMap<>(PerkAction.Type.class);
-        private final List<ResourceLocation> perkList = new ArrayList<>();
-
-        /**
-         * @param id the ID of the associated Deity
-         */
-        public Builder(ResourceLocation id) {
-            this.id = id;
-        }
-
-        public Builder addAltar(ResourceLocation id) {
-            this.altarList.add(id);
-            return this;
-        }
-
-        public Builder addOffering(ResourceLocation id, Offering offering) {
-            if (offering.getFavor() == 0 && !offering.getFunction().isPresent() && !offering.getTrade().isPresent()) {
-                return this;
-            }
-            ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(offering.getAccept().getItem());
-            this.offeringMap.computeIfAbsent(itemId, r -> new ArrayList<>()).add(id);
-            return this;
-        }
-
-        public Builder addSacrifice(ResourceLocation id, Sacrifice sacrifice) {
-            if (sacrifice.getFavor() == 0 && !sacrifice.getFunction().isPresent()) {
-                return this;
-            }
-            ResourceLocation entityId = sacrifice.getEntity();
-            this.sacrificeMap.computeIfAbsent(entityId, r -> new ArrayList<>()).add(id);
-            return this;
-        }
-
-        public Builder addPerk(ResourceLocation id, Perk perk) {
-            if (FavorRange.EMPTY.equals(perk.getRange()) || perk.getActions().isEmpty()) {
-                return this;
-            }
-            for (PerkAction action : perk.getActions()) {
-                if (action.getType() == PerkAction.Type.UNLOCK) {
-                    Deity deity = RPGGods.DEITY_MAP.getOrDefault(action.getId().orElse(Deity.EMPTY.getId()), Deity.EMPTY);
-                    if (!deity.isEnabled()) {
-                        RPGGods.LOGGER.info("Skipping perk with ID " + id + " because it unlocks a deity that is disabled.");
-                        return this;
-                    }
-                }
-            }
-            this.perkList.add(id);
-            for (PerkCondition condition : perk.getConditions()) {
-                this.perkByConditionMap.computeIfAbsent(condition.getType(), r -> new ArrayList<>()).add(id);
-            }
-            for (PerkAction action : perk.getActions()) {
-                PerkAction.Type type = action.getType();
-                this.perkByTypeMap.computeIfAbsent(type, r -> new ArrayList<>()).add(id);
-                action.getAffinity().ifPresent(affinity -> RPGGods.AFFINITY
-                        .computeIfAbsent(affinity.getEntity(), entityId -> new EnumMap<>(AffinityType.class))
-                        .computeIfAbsent(affinity.getType(), affinityType -> new ArrayList<>()).add(id));
-            }
-            return this;
-        }
-
-        public DeityContainer build() {
-            return new DeityContainer(id, altarList, offeringMap, sacrificeMap, perkByConditionMap, perkByTypeMap, perkList);
-        }
     }
 }

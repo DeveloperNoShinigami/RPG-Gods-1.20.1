@@ -10,11 +10,13 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.RegistryAccess;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import rpggods.RGRegistry;
 import rpggods.util.altar.AltarItems;
 import rpggods.util.altar.AltarPose;
 
+import java.util.Map;
 import java.util.Optional;
 
 public class Altar {
@@ -71,6 +73,17 @@ public class Altar {
     }
 
     //// HELPER METHODS ////
+
+    /**
+     * @param entry the registry entry
+     * @param deityId the deity ID
+     * @return true if the given registry entry should be associated with the given deity
+     */
+    public static boolean isFor(final Map.Entry<ResourceKey<Altar>, Altar> entry, final ResourceLocation deityId) {
+        final Altar altar = entry.getValue();
+        final Optional<ResourceLocation> oDeity = altar.getDeity();
+        return altar.isEnabled() && oDeity.isPresent() && deityId.equals(oDeity.get());
+    }
 
     /**
      * @param registryAccess the registry access
