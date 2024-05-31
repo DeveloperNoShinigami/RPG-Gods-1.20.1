@@ -11,8 +11,6 @@ import net.minecraftforge.common.util.INBTSerializable;
 
 public class Cooldown implements INBTSerializable<CompoundTag> {
 
-    public static Cooldown EMPTY = new Cooldown(1, 0);
-
     private static final String MAX_USES = "maxuses";
     private static final String MAX_COOLDOWN = "maxcooldown";
     private static final String MAX_RESTOCKS = "maxrestocks";
@@ -26,6 +24,8 @@ public class Cooldown implements INBTSerializable<CompoundTag> {
     private int restocks;
     private long maxCooldown;
     private long cooldown;
+
+    //// CONSTRUCTORS ////
 
     public Cooldown(CompoundTag nbt) {
         deserializeNBT(nbt);
@@ -44,6 +44,12 @@ public class Cooldown implements INBTSerializable<CompoundTag> {
         this.restocks = 0;
     }
 
+    public static Cooldown empty() {
+        return new Cooldown(1, 0);
+    }
+
+    //// GETTERS ////
+
     /** @return the maximum number of uses until cooldown is triggered **/
     public int getMaxUses() {
         return maxUses;
@@ -58,6 +64,8 @@ public class Cooldown implements INBTSerializable<CompoundTag> {
     public long getCooldown() {
         return cooldown;
     }
+
+    //// METHODS ////
 
     /** @param add the amount of cooldown to add or remove **/
     public void addCooldown(long add) {

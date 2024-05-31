@@ -20,7 +20,6 @@ import rpggods.RGEvents;
 import rpggods.RGRegistry;
 import rpggods.util.DeferredHolderSet;
 
-import java.util.List;
 import java.util.Optional;
 
 public class CombatStartCondition extends PerkCondition {
@@ -56,7 +55,7 @@ public class CombatStartCondition extends PerkCondition {
     }
 
     @Override
-    public List<Component> createDescription(RegistryAccess registryAccess) {
+    public Component createDescription(RegistryAccess registryAccess) {
         // TODO combat start condition description, with support for specific entities or entity tags
         return ImmutableList.of();
     }

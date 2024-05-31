@@ -213,7 +213,7 @@ public class FavorLevel implements INBTSerializable<CompoundTag> {
         long favorToNext = Math.min(calculateFavor(maxLevel), getFavorToNextLevel());
         String sFavorToNext = (favorToNext == 0 ? "--" : String.valueOf(favorToNext));
         playerIn.displayClientMessage(Component.translatable("favor.current_favor",
-                DeityContainer.getName(deity), getFavor(), sFavorToNext, getLevel())
+                DeityContainer.createName(deity), getFavor(), sFavorToNext, getLevel())
                 .withStyle(ChatFormatting.LIGHT_PURPLE), false);
     }
 

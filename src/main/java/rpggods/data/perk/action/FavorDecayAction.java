@@ -6,7 +6,6 @@
 
 package rpggods.data.perk.action;
 
-import com.google.common.collect.ImmutableList;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.RegistryAccess;
@@ -16,8 +15,6 @@ import rpggods.RGRegistry;
 import rpggods.data.deity.Deity;
 import rpggods.data.deity.DeityContainer;
 import rpggods.data.favor.FavorLevel;
-
-import java.util.List;
 
 public class FavorDecayAction extends PerkAction {
 
@@ -52,9 +49,10 @@ public class FavorDecayAction extends PerkAction {
     }
 
     @Override
-    public List<Component> createDescription(RegistryAccess registryAccess) {
+    public Component createDescription(RegistryAccess registryAccess) {
         final Component percentage = createPercentageComponent(amount);
-        return ImmutableList.of(Component.translatable("favor.perk.type.add_decay.description.full", percentage, DeityContainer.getName(deity)));
+        final Component deityName = DeityContainer.getOrCreate(registryAccess, this.deity).getName();
+        return Component.translatable(PREFIX + "favor_decay" + SUFFIX, percentage, deityName);
     }
 
     @Override

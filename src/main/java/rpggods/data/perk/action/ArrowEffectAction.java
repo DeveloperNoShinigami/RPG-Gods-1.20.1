@@ -6,26 +6,15 @@
 
 package rpggods.data.perk.action;
 
-import com.google.common.collect.ImmutableList;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.RandomSource;
-import net.minecraft.util.valueproviders.ConstantFloat;
-import net.minecraft.util.valueproviders.FloatProvider;
 import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.ai.targeting.TargetingConditions;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.entity.projectile.Arrow;
-import net.minecraft.world.phys.AABB;
 import rpggods.RGRegistry;
 import rpggods.util.MobEffectProvider;
-import rpggods.util.TargetType;
-
-import java.util.List;
 
 public class ArrowEffectAction extends PerkAction {
 
@@ -54,8 +43,8 @@ public class ArrowEffectAction extends PerkAction {
     }
 
     @Override
-    public List<Component> createDescription(RegistryAccess registryAccess) {
-        return ImmutableList.of(mobEffectProvider.createDescription());
+    public Component createDescription(RegistryAccess registryAccess) {
+        return Component.translatable(PREFIX + "arrow_effect" + SUFFIX, mobEffectProvider.createDescription());
     }
 
     @Override

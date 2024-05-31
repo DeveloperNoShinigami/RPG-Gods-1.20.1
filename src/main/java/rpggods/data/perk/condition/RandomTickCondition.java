@@ -13,7 +13,6 @@ import net.minecraft.network.chat.Component;
 import rpggods.RGRegistry;
 
 import javax.annotation.concurrent.Immutable;
-import java.util.List;
 
 @Immutable
 public class RandomTickCondition extends PerkCondition {
@@ -35,7 +34,7 @@ public class RandomTickCondition extends PerkCondition {
     }
 
     @Override
-    public List<Component> createDescription(final RegistryAccess registryAccess) {
+    public Component createDescription(final RegistryAccess registryAccess) {
         return ImmutableList.of(Component.translatable("rpggods.perk_condition.random_tick"));
     }
 

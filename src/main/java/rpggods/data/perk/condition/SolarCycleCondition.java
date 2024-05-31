@@ -16,7 +16,6 @@ import rpggods.RPGGods;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
-import java.util.List;
 import java.util.Optional;
 
 @Immutable
@@ -60,7 +59,7 @@ public class SolarCycleCondition extends PerkCondition {
     }
 
     @Override
-    public List<Component> createDescription(final RegistryAccess registryAccess) {
+    public Component createDescription(final RegistryAccess registryAccess) {
         // TODO solar cycle condition description
         return ImmutableList.of();
     }

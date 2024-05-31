@@ -10,9 +10,12 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.RegistryAccess;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.item.ItemStack;
 import rpggods.RGRegistry;
+import rpggods.util.RGCodecUtils;
 
 import javax.annotation.concurrent.Immutable;
 import java.util.Optional;
@@ -20,13 +23,10 @@ import java.util.Optional;
 @Immutable
 public class Deity {
 
-    public static final Deity EMPTY = new Deity(new ResourceLocation("null"), ItemStack.EMPTY, false, false, 0, 0);
-
-    private static final Codec<ItemStack> ITEM_OR_STACK_CODEC = Offering.ITEM_OR_STACK_CODEC;
-
     public static final Codec<Deity> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             ResourceLocation.CODEC.fieldOf("name").forGetter(Deity::getId),
-            ITEM_OR_STACK_CODEC.optionalFieldOf("icon", ItemStack.EMPTY).forGetter(Deity::getIcon),
+            RGCodecUtils.ITEM_OR_STACK_CODEC.optionalFieldOf("icon", ItemStack.EMPTY).forGetter(Deity::getIcon),
+            Deity.Gender.CODEC.optionalFieldOf("gender", Gender.MALE).forGetter(Deity::getGender),
             Codec.BOOL.optionalFieldOf("unlocked", true).forGetter(Deity::isUnlocked),
             Codec.BOOL.optionalFieldOf("enabled", true).forGetter(Deity::isEnabled),
             Codec.INT.optionalFieldOf("minlevel", -10).forGetter(Deity::getMinLevel),
@@ -37,22 +37,28 @@ public class Deity {
     private final ResourceLocation id;
     /** The ItemStack icon in the favor GUI **/
     private final ItemStack icon;
-    /** True if the deity is unlocked **/
+    /** The gender to use for pronouns and models **/
+    private final Deity.Gender gender;
+    /** True if the deity is unlocked by default **/
     private final boolean unlocked;
-    /** True if the deity is enabled **/
+    /** True if the deity is enabled by default **/
     private final boolean enabled;
     /** The minimum favor level **/
     private final int minLevel;
     /** The maximum favor level **/
     private final int maxLevel;
+    /** The deity name **/
+    private final Component name;
 
-    public Deity(ResourceLocation id, ItemStack icon, boolean unlocked, boolean enabled, int minLevel, int maxLevel) {
+    public Deity(ResourceLocation id, ItemStack icon, Deity.Gender gender, boolean unlocked, boolean enabled, int minLevel, int maxLevel) {
         this.id = id;
         this.icon = icon;
+        this.gender = gender;
         this.unlocked = unlocked;
         this.enabled = enabled;
         this.minLevel = minLevel;
         this.maxLevel = maxLevel;
+        this.name = Component.translatable("deity." + id.getNamespace() + "." + id.getPath());
     }
 
     //// HELPER METHODS ////
@@ -72,9 +78,19 @@ public class Deity {
         return id;
     }
 
+    /** @return the deity name **/
+    public Component getName() {
+        return this.name;
+    }
+
     /** @return The ItemStack icon of the deity in the favor GUI **/
     public ItemStack getIcon() {
         return icon;
+    }
+
+    /** @return The gender to use for pronouns and models **/
+    public Deity.Gender getGender() {
+        return gender;
     }
 
     /** @return True if the deity is unlocked **/
@@ -106,5 +122,24 @@ public class Deity {
                 ", minLevel=" + minLevel +
                 ", maxLevel=" + maxLevel +
                 '}';
+    }
+
+    public static enum Gender implements StringRepresentable {
+        MALE("male"),
+        FEMALE("female"),
+        OTHER("other");
+
+        public static final Codec<Gender> CODEC = StringRepresentable.fromEnum(Gender::values);
+
+        private final String name;
+
+        Gender(String name) {
+            this.name = name;
+        }
+
+        @Override
+        public String getSerializedName() {
+            return this.name;
+        }
     }
 }

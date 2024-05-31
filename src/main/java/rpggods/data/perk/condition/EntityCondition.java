@@ -19,7 +19,6 @@ import net.minecraftforge.registries.ForgeRegistries;
 import rpggods.RGRegistry;
 import rpggods.util.DeferredHolderSet;
 
-import java.util.List;
 import java.util.Optional;
 
 public abstract class EntityCondition extends PerkCondition {
@@ -53,7 +52,7 @@ public abstract class EntityCondition extends PerkCondition {
     }
 
     @Override
-    public List<Component> createDescription(RegistryAccess registryAccess) {
+    public Component createDescription(RegistryAccess registryAccess) {
         // TODO entity condition "or" description
         // TODO make child classes use this description list in their own descriptions
         // Component.translatable(entityType.get().getDescriptionId())

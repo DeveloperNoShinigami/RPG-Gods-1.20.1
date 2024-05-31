@@ -40,7 +40,7 @@ public class NotCondition extends PerkCondition {
     }
 
     @Override
-    public List<Component> createDescription(final RegistryAccess registryAccess) {
+    public Component createDescription(final RegistryAccess registryAccess) {
         final List<Component> builder = new ArrayList<>();
         builder.add(Component.translatable("rpggods.perk_condition.not").withStyle(ChatFormatting.BOLD, ChatFormatting.GOLD));
         for(Component c : child.createDescription(registryAccess)) {

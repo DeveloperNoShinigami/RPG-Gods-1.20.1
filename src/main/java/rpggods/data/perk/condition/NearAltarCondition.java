@@ -78,7 +78,7 @@ public class NearAltarCondition extends PerkCondition {
     }
 
     @Override
-    public List<Component> createDescription(RegistryAccess registryAccess) {
+    public Component createDescription(RegistryAccess registryAccess) {
         // TODO near altar condition description
         return ImmutableList.of();
     }

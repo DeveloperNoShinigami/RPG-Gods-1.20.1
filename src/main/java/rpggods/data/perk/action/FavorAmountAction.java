@@ -6,7 +6,6 @@
 
 package rpggods.data.perk.action;
 
-import com.google.common.collect.ImmutableList;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.RegistryAccess;
@@ -14,16 +13,11 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.util.valueproviders.IntProvider;
-import rpggods.RGEvents;
 import rpggods.RGRegistry;
 import rpggods.data.deity.Deity;
-import rpggods.data.favor.FavorCommand;
+import rpggods.data.deity.DeityContainer;
 import rpggods.data.favor.FavorLevel;
 import rpggods.util.FavorChangedEvent;
-
-import javax.annotation.Nullable;
-import java.util.List;
-import java.util.Optional;
 
 public class FavorAmountAction extends PerkAction {
 
@@ -71,9 +65,10 @@ public class FavorAmountAction extends PerkAction {
     }
 
     @Override
-    public List<Component> createDescription(RegistryAccess registryAccess) {
-        // TODO favor amount perk action description, taking into account min-max and also points vs. levels
-        return ImmutableList.of(Component.literal("" + amount.getMaxValue()));
+    public Component createDescription(RegistryAccess registryAccess) {
+        final Component boundsComponent = createBoundsComponent(amount.getMinValue(), amount.getMaxValue());
+        final Component deityName = DeityContainer.getOrCreate(registryAccess, this.deity).getName();
+        return Component.translatable(PREFIX + "favor" + SUFFIX + "." + this.type.getSerializedName(), boundsComponent, deityName);
     }
 
     @Override

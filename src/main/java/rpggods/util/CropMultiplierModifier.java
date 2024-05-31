@@ -25,7 +25,7 @@ import net.minecraftforge.common.loot.IGlobalLootModifier;
 import net.minecraftforge.common.loot.LootModifier;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.registries.ForgeRegistries;
-import rpggods.RGEvents;
+import rpggods.PerkDispatcher;
 import rpggods.RPGGods;
 import rpggods.data.deity.DeityContainer;
 import rpggods.data.favor.IFavor;
@@ -81,7 +81,7 @@ public class CropMultiplierModifier extends LootModifier {
                 Perk perk;
                 for (ResourceLocation id : cropHarvest) {
                     perk = RPGGods.PERK_MAP.get(id);
-                    if (RGEvents.runPerk(perk, player, f)) {
+                    if (PerkDispatcher.runPerk(perk, player, f)) {
                         float multiplier = 0;
                         for(PerkAction action : perk.getActions()) {
                             if(action.getType() == PerkAction.Type.CROP_HARVEST && action.getMultiplier().isPresent()) {

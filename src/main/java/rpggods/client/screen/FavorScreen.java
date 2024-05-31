@@ -226,7 +226,7 @@ public class FavorScreen extends AbstractContainerScreen<FavorContainerMenu> {
                     Optional<Offering> optional = Optional.ofNullable(RPGGods.OFFERING_MAP.get(offeringId));
                     optional.ifPresent(offering -> {
                         // determine which map to use (offering or trade)
-                        Map<ResourceLocation, List<ImmutablePair<ResourceLocation, Offering>>> map = offering.getTrade().isPresent() ? tradeMap : offeringMap;
+                        Map<ResourceLocation, List<ImmutablePair<ResourceLocation, Offering>>> map = offering.getResult().isPresent() ? tradeMap : offeringMap;
                         // add the offering to the map
                         map.get(d.getId()).add(ImmutablePair.of(offeringId, offering));
                     });
@@ -274,7 +274,7 @@ public class FavorScreen extends AbstractContainerScreen<FavorContainerMenu> {
         // sort offerings by favor (descending)
         offeringMap.values().forEach(l -> Collections.sort(l, (t1, t2) -> t2.getRight().getFavor() - t1.getRight().getFavor()));
         // sort trades by unlock level (ascending)
-        tradeMap.values().forEach(l -> Collections.sort(l, (t1, t2) -> t1.getRight().getTradeMinLevel() - t2.getRight().getTradeMinLevel()));
+        tradeMap.values().forEach(l -> Collections.sort(l, (t1, t2) -> t1.getRight().getMinLevel() - t2.getRight().getMinLevel()));
         // update sacrifice counts
         sacrificeCount = SACRIFICE_COUNT;
         // sort sacrifices by favor (descending)
@@ -1025,13 +1025,13 @@ public class FavorScreen extends AbstractContainerScreen<FavorContainerMenu> {
                     }
                 }
                 // add perk condition texts
-                for (PerkCondition condition : perk.getConditions()) {
+                for (PerkCondition condition : perk.getCondition()) {
                     // do not show "random tick" conditions
                     if (condition.getType() == PerkCondition.Type.RANDOM_TICK) {
                         isRandomPerk = true;
                     }
                 }
-                this.perkConditions.addAll(formatDescriptions(perk.getConditions(), ChatFormatting.DARK_GRAY, perkConditionBlacklist));
+                this.perkConditions.addAll(formatDescriptions(perk.getCondition(), ChatFormatting.DARK_GRAY, perkConditionBlacklist));
                 // add text to display favor range
                 FavorLevel favorLevel = FavorScreen.this.getMenu().getFavor().getFavor(perk.getDeity());
                 ChatFormatting color = perk.getRange().isInRange(favorLevel.getLevel()) ? ChatFormatting.DARK_GREEN : ChatFormatting.RED;
@@ -1156,13 +1156,13 @@ public class FavorScreen extends AbstractContainerScreen<FavorContainerMenu> {
         public void renderButton(PoseStack matrixStack, int mouseX, int mouseY, float partialTicks) {
             if (this.visible && offering != null) {
                 // draw item
-                FavorScreen.this.itemRenderer.renderGuiItem(offering.getAccept(), this.x, this.y);
-                FavorScreen.this.itemRenderer.renderGuiItemDecorations(FavorScreen.this.font, offering.getAccept(), this.x, this.y);
+                FavorScreen.this.itemRenderer.renderGuiItem(offering.getOffering(), this.x, this.y);
+                FavorScreen.this.itemRenderer.renderGuiItemDecorations(FavorScreen.this.font, offering.getOffering(), this.x, this.y);
                 // draw trade
                 if (hasTrade) {
                     // draw trade item
-                    FavorScreen.this.itemRenderer.renderGuiItem(offering.getTrade().get(), this.x + 18 + ARROW_WIDTH, this.y);
-                    FavorScreen.this.itemRenderer.renderGuiItemDecorations(FavorScreen.this.font, offering.getTrade().get(), this.x + 18 + ARROW_WIDTH, this.y);
+                    FavorScreen.this.itemRenderer.renderGuiItem(offering.getResult().get(), this.x + 18 + ARROW_WIDTH, this.y);
+                    FavorScreen.this.itemRenderer.renderGuiItemDecorations(FavorScreen.this.font, offering.getResult().get(), this.x + 18 + ARROW_WIDTH, this.y);
                 } else if (offering.getFunction().isPresent()) {
                     // draw question mark instead of item
                     FavorScreen.this.font.draw(matrixStack, tradeFunctionText, this.x + 18 + ARROW_WIDTH + 4, this.y + textY, 0xFFFFFF);
@@ -1198,14 +1198,14 @@ public class FavorScreen extends AbstractContainerScreen<FavorContainerMenu> {
         @Override
         protected void updateOffering(final ResourceLocation offeringId, final Offering offering) {
             super.updateOffering(offeringId, offering);
-            this.hasTrade = offering.getTrade().isPresent() && !offering.getTrade().get().isEmpty();
+            this.hasTrade = offering.getResult().isPresent() && !offering.getResult().get().isEmpty();
             // determine item tooltip
-            if (offering.hasLevelRange() || offering.getTrade().isPresent()) {
-                this.unlockText = Component.literal("" + offering.getTradeMinLevel()).withStyle(ChatFormatting.DARK_PURPLE);
-                if (offering.getTradeMinLevel() > Integer.MIN_VALUE && offering.getTradeMaxLevel() < Integer.MAX_VALUE) {
-                    this.unlockTooltip = Component.translatable("gui.favor.offering.unlock.multiple.tooltip", offering.getTradeMinLevel(), offering.getTradeMaxLevel());
+            if (offering.hasLevelRange() || offering.getResult().isPresent()) {
+                this.unlockText = Component.literal("" + offering.getMinLevel()).withStyle(ChatFormatting.DARK_PURPLE);
+                if (offering.getMinLevel() > Integer.MIN_VALUE && offering.getMaxLevel() < Integer.MAX_VALUE) {
+                    this.unlockTooltip = Component.translatable("gui.favor.offering.unlock.multiple.tooltip", offering.getMinLevel(), offering.getMaxLevel());
                 } else {
-                    this.unlockTooltip = Component.translatable("gui.favor.offering.unlock.single.tooltip", offering.getTradeMinLevel());
+                    this.unlockTooltip = Component.translatable("gui.favor.offering.unlock.single.tooltip", offering.getMinLevel());
                 }
             }
         }
@@ -1222,15 +1222,15 @@ public class FavorScreen extends AbstractContainerScreen<FavorContainerMenu> {
                     return new ArrayList<>(List.of(unlockTooltip));
                 }
                 // trade result or function tooltips
-                if (offering.getTrade().isPresent() && mouseX >= (this.x + 18 + ARROW_WIDTH) && mouseX <= (this.x + 18 * 2 + ARROW_WIDTH)) {
-                    if (offering.getTrade().get().isEmpty() && offering.getFunction().isPresent()) {
+                if (offering.getResult().isPresent() && mouseX >= (this.x + 18 + ARROW_WIDTH) && mouseX <= (this.x + 18 * 2 + ARROW_WIDTH)) {
+                    if (offering.getResult().get().isEmpty() && offering.getFunction().isPresent()) {
                         return new ArrayList<>(List.of(functionTooltip));
                     }
-                    return FavorScreen.this.getTooltipFromItem(offering.getTrade().get());
+                    return FavorScreen.this.getTooltipFromItem(offering.getResult().get());
                 }
                 // item tooltip
                 if (mouseX <= (this.x + 18)) {
-                    List<Component> tooltip = new ArrayList<>(FavorScreen.this.getTooltipFromItem(offering.getAccept()));
+                    List<Component> tooltip = new ArrayList<>(FavorScreen.this.getTooltipFromItem(offering.getOffering()));
                     // attempt to add unlock range
                     if (offering.hasLevelRange()) {
                         tooltip.add(unlockTooltip.copy().withStyle(ChatFormatting.GRAY));
@@ -1272,8 +1272,8 @@ public class FavorScreen extends AbstractContainerScreen<FavorContainerMenu> {
         public void renderButton(PoseStack matrixStack, int mouseX, int mouseY, float partialTicks) {
             if (this.visible && offering != null) {
                 // draw item
-                FavorScreen.this.itemRenderer.renderGuiItem(offering.getAccept(), this.x, this.y);
-                FavorScreen.this.itemRenderer.renderGuiItemDecorations(FavorScreen.this.font, offering.getAccept(), this.x, this.y);
+                FavorScreen.this.itemRenderer.renderGuiItem(offering.getOffering(), this.x, this.y);
+                FavorScreen.this.itemRenderer.renderGuiItemDecorations(FavorScreen.this.font, offering.getOffering(), this.x, this.y);
                 // draw favor text
                 FavorScreen.this.font.draw(matrixStack, favorText, this.x + 18, this.y + textY, 0xFFFFFF);
                 // draw function text
@@ -1305,7 +1305,7 @@ public class FavorScreen extends AbstractContainerScreen<FavorContainerMenu> {
             this.cooldown = FavorScreen.this.getMenu().getFavor().getOfferingCooldown(offeringId).getCooldown();
             ResourceLocation deity = Offering.getDeity(offeringId);
             int level = FavorScreen.this.getMenu().getFavor().getFavor(deity).getLevel();
-            this.levelRange = !offering.hasLevelRange() || (level >= offering.getTradeMinLevel() && level <= offering.getTradeMaxLevel());
+            this.levelRange = !offering.hasLevelRange() || (level >= offering.getMinLevel() && level <= offering.getMaxLevel());
             // determine favor text
             int favorAmount = offering.getFavor();
             String favorString;
@@ -1318,17 +1318,17 @@ public class FavorScreen extends AbstractContainerScreen<FavorContainerMenu> {
                 color = ChatFormatting.DARK_RED;
             }
             this.favorText = Component.literal(favorString).withStyle(color);
-            if (offering.getFunctionText().isPresent()) {
-                this.functionTooltip = Component.translatable(offering.getFunctionText().get());
+            if (offering.getFunctionTranslationKey().isPresent()) {
+                this.functionTooltip = Component.translatable(offering.getFunctionTranslationKey().get());
             } else {
                 this.functionTooltip = Component.translatable("gui.favor.offering.function.tooltip");
             }
             // determine item tooltip
             if (offering.hasLevelRange()) {
-                if (offering.getTradeMinLevel() > Integer.MIN_VALUE && offering.getTradeMaxLevel() < Integer.MAX_VALUE) {
-                    this.unlockTooltip = Component.translatable("gui.favor.offering.unlock.multiple.tooltip", offering.getTradeMinLevel(), offering.getTradeMaxLevel());
+                if (offering.getMinLevel() > Integer.MIN_VALUE && offering.getMaxLevel() < Integer.MAX_VALUE) {
+                    this.unlockTooltip = Component.translatable("gui.favor.offering.unlock.multiple.tooltip", offering.getMinLevel(), offering.getMaxLevel());
                 } else {
-                    this.unlockTooltip = Component.translatable("gui.favor.offering.unlock.single.tooltip", offering.getTradeMinLevel());
+                    this.unlockTooltip = Component.translatable("gui.favor.offering.unlock.single.tooltip", offering.getMinLevel());
                 }
             } else {
                 this.unlockTooltip = Component.empty();
@@ -1345,7 +1345,7 @@ public class FavorScreen extends AbstractContainerScreen<FavorContainerMenu> {
                 return list;
             }
             if (mouseX <= (this.x + 18)) {
-                list.addAll(FavorScreen.this.getTooltipFromItem(this.offering.getAccept()));
+                list.addAll(FavorScreen.this.getTooltipFromItem(this.offering.getOffering()));
                 if (offering.hasLevelRange()) {
                     list.add(unlockTooltip.copy().withStyle(ChatFormatting.GRAY));
                 }
@@ -1446,8 +1446,8 @@ public class FavorScreen extends AbstractContainerScreen<FavorContainerMenu> {
             }
             this.favorText = Component.literal(favorString).withStyle(color);
             // determine function tooltip
-            if (sacrifice.getFunctionText().isPresent()) {
-                this.functionTooltip = Component.translatable(sacrifice.getFunctionText().get());
+            if (sacrifice.getFunctionTranslationKey().isPresent()) {
+                this.functionTooltip = Component.translatable(sacrifice.getFunctionTranslationKey().get());
             } else {
                 this.functionTooltip = Component.translatable("gui.favor.sacrifice.function.tooltip");
             }

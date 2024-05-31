@@ -6,15 +6,12 @@
 
 package rpggods.data.perk.action;
 
-import com.google.common.collect.ImmutableList;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.ExperienceOrb;
 import rpggods.RGRegistry;
-
-import java.util.List;
 
 public class XpValueAction extends PerkAction {
 
@@ -39,9 +36,9 @@ public class XpValueAction extends PerkAction {
     }
 
     @Override
-    public List<Component> createDescription(RegistryAccess registryAccess) {
+    public Component createDescription(RegistryAccess registryAccess) {
         final Component percentage = createPercentageComponent(multiplier);
-        return ImmutableList.of(percentage);
+        return Component.translatable(PREFIX + "xp" + SUFFIX, percentage);
     }
 
     @Override

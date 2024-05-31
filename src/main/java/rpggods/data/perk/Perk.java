@@ -6,38 +6,36 @@
 
 package rpggods.data.perk;
 
-import com.google.common.collect.ImmutableList;
-import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import rpggods.RGRegistry;
 import rpggods.data.favor.FavorLevel;
 import rpggods.data.favor.FavorRange;
 import rpggods.data.perk.action.PerkAction;
+import rpggods.data.perk.condition.FalseCondition;
 import rpggods.data.perk.condition.PerkCondition;
+import rpggods.data.perk.condition.TrueCondition;
+import rpggods.util.RGCodecUtils;
 
+import javax.annotation.concurrent.Immutable;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
 
+@Immutable
 public final class Perk {
 
-    public static final Perk EMPTY = new Perk(PerkIcon.EMPTY, List.of(),
+    @Deprecated
+    public static final Perk EMPTY = new Perk(PerkIcon.EMPTY, FalseCondition.INSTANCE,
             FavorRange.EMPTY, List.of(), 0.0F, "null", 1000L, Optional.empty());
 
     public static final Codec<Perk> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             PerkIcon.CODEC.optionalFieldOf("icon", PerkIcon.EMPTY).forGetter(Perk::getIcon),
-            Codec.either(PerkCondition.CODEC, PerkCondition.CODEC.listOf())
-                    .xmap(either -> either.map(ImmutableList::of, Function.identity()),
-                            list -> list.size() == 1 ? Either.left(list.get(0)) : Either.right(list))
-                    .optionalFieldOf("condition", List.of()).forGetter(Perk::getConditions),
+            PerkCondition.DIRECT_CODEC.optionalFieldOf("condition", TrueCondition.INSTANCE).forGetter(Perk::getCondition),
             FavorRange.CODEC.optionalFieldOf("range", FavorRange.EMPTY).forGetter(Perk::getRange),
-            Codec.either(PerkAction.CODEC, PerkAction.CODEC.listOf())
-                    .xmap(either -> either.map(ImmutableList::of, Function.identity()),
-                            list -> list.size() == 1 ? Either.left(list.get(0)) : Either.right(list))
-                    .optionalFieldOf("action", List.of()).forGetter(Perk::getActions),
+            RGCodecUtils.listOrElementCodec(PerkAction.DIRECT_CODEC).optionalFieldOf("action", List.of()).forGetter(Perk::getActions),
             Codec.FLOAT.optionalFieldOf("chance", 1.0F).forGetter(Perk::getChance),
             Codec.STRING.optionalFieldOf("cooldown_category", "").forGetter(Perk::getCategory),
             Codec.LONG.optionalFieldOf("cooldown", 600L).forGetter(Perk::getCooldown),
@@ -45,20 +43,20 @@ public final class Perk {
     ).apply(instance, Perk::new));
 
     private final PerkIcon icon;
-    private final List<PerkCondition> conditions;
+    private final PerkCondition condition;
     private final FavorRange range;
     private final List<PerkAction> actions;
     private final float chance;
     private final String category;
     private final long cooldown;
-    private Optional<Boolean> positiveFlag;
-    private boolean isPositive;
+    private final Optional<Boolean> positiveFlag;
+    private final boolean isPositive;
 
-    public Perk(PerkIcon icon, List<PerkCondition> conditions, FavorRange range,
+    public Perk(PerkIcon icon, PerkCondition condition, FavorRange range,
                 List<PerkAction> actions, float chance, String category, long cooldown,
                 Optional<Boolean> positiveFlag) {
         this.icon = icon;
-        this.conditions = conditions;
+        this.condition = condition;
         this.range = range;
         this.actions = actions;
         this.chance = chance;
@@ -66,10 +64,17 @@ public final class Perk {
         this.positiveFlag = positiveFlag;
         this.isPositive = positiveFlag.orElse(range.getMinLevel() >= 0);
         // determine category if not provided
-        if(null == category || category.isEmpty()) {
-            category = actions.isEmpty() ? "wtf u broke it" : actions.get(0).getType().getSerializedName();
+        String tempCategory = category;
+        if(null == tempCategory || tempCategory.isEmpty()) {
+            // verify actions non-empty
+            if(actions.isEmpty()) {
+                tempCategory = "empty perk go brrrrr";
+            } else {
+                ResourceLocation actionTypeId = RGRegistry.PERK_ACTION_TYPES_SUPPLIER.get().getKey(actions.get(0).getCodec());
+                tempCategory = actionTypeId.toString();
+            }
         }
-        this.category = category;
+        this.category = tempCategory;
     }
 
     /**
@@ -98,8 +103,8 @@ public final class Perk {
         return icon;
     }
 
-    public List<PerkCondition> getConditions() {
-        return conditions;
+    public PerkCondition getCondition() {
+        return condition;
     }
 
     public FavorRange getRange() {
@@ -146,7 +151,7 @@ public final class Perk {
     public String toString() {
         return "Perk{" +
                 "icon=" + icon.getItem().getItem().toString() +
-                ", conditions=" + conditions +
+                ", conditions=" + condition +
                 ", range=" + range +
                 ", actions=" + actions +
                 ", chance=" + chance +

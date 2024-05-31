@@ -6,7 +6,6 @@
 
 package rpggods.data.perk.action;
 
-import com.google.common.collect.ImmutableList;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.Holder;
@@ -26,9 +25,6 @@ import net.minecraftforge.event.entity.living.BabyEntitySpawnEvent;
 import net.minecraftforge.registries.ForgeRegistries;
 import rpggods.RGRegistry;
 import rpggods.util.DeferredHolderSet;
-
-import javax.annotation.Nullable;
-import java.util.List;
 
 public class OffspringCountAction extends PerkAction {
 
@@ -92,12 +88,9 @@ public class OffspringCountAction extends PerkAction {
     }
 
     @Override
-    public List<Component> createDescription(RegistryAccess registryAccess) {
-        // TODO add entity type(s) to offspring count action
-        if(amount.getMinValue() == amount.getMaxValue()) {
-            return ImmutableList.of(Component.translatable("rpggods.perk_action.offspring_count.constant", amount.getMaxValue()));
-        }
-        return ImmutableList.of(Component.translatable("rpggods.perk_action.offspring_count.range", amount.getMinValue(), amount.getMaxValue()));
+    public Component createDescription(RegistryAccess registryAccess) {
+        final Component boundsComponent = createBoundsComponent(amount.getMinValue(), amount.getMaxValue());
+        return Component.translatable(PREFIX + "offspring_count" + SUFFIX, boundsComponent);
     }
 
     @Override

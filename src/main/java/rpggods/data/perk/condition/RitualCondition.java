@@ -17,7 +17,6 @@ import rpggods.RGRegistry;
 import rpggods.util.RGCodecUtils;
 
 import javax.annotation.concurrent.Immutable;
-import java.util.List;
 import java.util.Optional;
 
 @Immutable
@@ -54,7 +53,7 @@ public class RitualCondition extends PerkCondition {
     }
 
     @Override
-    public List<Component> createDescription(final RegistryAccess registryAccess) {
+    public Component createDescription(final RegistryAccess registryAccess) {
         // TODO ritual condition description
         return ImmutableList.of();
     }

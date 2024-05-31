@@ -131,7 +131,7 @@ public class LocationCondition extends PerkCondition {
     }
 
     @Override
-    public List<Component> createDescription(final RegistryAccess registryAccess) {
+    public Component createDescription(final RegistryAccess registryAccess) {
         // create description
         final ImmutableList.Builder<Component> builder = ImmutableList.builder();
         // offset

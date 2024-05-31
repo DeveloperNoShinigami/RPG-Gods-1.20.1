@@ -15,7 +15,6 @@ import rpggods.RGRegistry;
 import rpggods.data.deity.Altar;
 import rpggods.data.deity.Deity;
 
-import java.util.List;
 import java.util.Optional;
 
 public class PatronCondition extends PerkCondition {
@@ -50,7 +49,7 @@ public class PatronCondition extends PerkCondition {
     }
 
     @Override
-    public List<Component> createDescription(RegistryAccess registryAccess) {
+    public Component createDescription(RegistryAccess registryAccess) {
         return ImmutableList.of(Component.translatable(Altar.createTranslationKey(deity)));
     }
 

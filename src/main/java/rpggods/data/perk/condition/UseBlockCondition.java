@@ -18,8 +18,6 @@ import net.minecraftforge.registries.ForgeRegistries;
 import rpggods.RGRegistry;
 import rpggods.util.DeferredHolderSet;
 
-import java.util.List;
-
 public class UseBlockCondition extends PerkCondition {
 
     public static final Codec<UseBlockCondition> CODEC = RecordCodecBuilder.create(instance -> instance.group(
@@ -44,7 +42,7 @@ public class UseBlockCondition extends PerkCondition {
     }
 
     @Override
-    public List<Component> createDescription(RegistryAccess registryAccess) {
+    public Component createDescription(RegistryAccess registryAccess) {
         // TODO use block condition description
         return ImmutableList.of();
     }

@@ -16,7 +16,6 @@ import net.minecraft.util.valueproviders.UniformFloat;
 import rpggods.RGRegistry;
 
 import javax.annotation.concurrent.Immutable;
-import java.util.List;
 
 @Immutable
 public class RandomChanceCondition extends PerkCondition {
@@ -52,7 +51,7 @@ public class RandomChanceCondition extends PerkCondition {
     }
 
     @Override
-    public List<Component> createDescription(final RegistryAccess registryAccess) {
+    public Component createDescription(final RegistryAccess registryAccess) {
         final String sChance = String.format("%.4f", chance * 100.0D).replaceAll("0*$", "").replaceAll("\\.$", "");
         return ImmutableList.of(Component.translatable("rpggods.perk_condition.random_chance", sChance));
     }

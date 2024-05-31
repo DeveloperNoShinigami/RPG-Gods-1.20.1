@@ -6,7 +6,6 @@
 
 package rpggods.data.perk.action;
 
-import com.google.common.collect.ImmutableList;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.RegistryAccess;
@@ -62,10 +61,10 @@ public class ItemDurabilityAction extends PerkAction {
     }
 
     @Override
-    public List<Component> createDescription(RegistryAccess registryAccess) {
+    public Component createDescription(RegistryAccess registryAccess) {
         // TODO add slot(s) to item durability action description
         final Component percentage = createPercentageComponent(percent);
-        return ImmutableList.of(percentage);
+        return Component.translatable(PREFIX + "durability" + SUFFIX, percentage);
     }
 
     @Override

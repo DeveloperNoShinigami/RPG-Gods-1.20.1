@@ -16,7 +16,6 @@ import rpggods.RGRegistry;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
-import java.util.List;
 import java.util.Optional;
 
 @Immutable
@@ -53,7 +52,7 @@ public class WeatherCondition extends PerkCondition {
     }
 
     @Override
-    public List<Component> createDescription(final RegistryAccess registryAccess) {
+    public Component createDescription(final RegistryAccess registryAccess) {
         // create components
         final Component cRaining = Component.translatable("rpggods.perk_condition.weather.raining");
         final Component cThundering = Component.translatable("rpggods.perk_condition.weather.thundering");

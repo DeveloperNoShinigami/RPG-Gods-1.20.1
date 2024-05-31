@@ -7,58 +7,58 @@
 package rpggods.data.deity;
 
 import com.google.common.collect.ImmutableList;
-import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.EntityType;
+import net.minecraftforge.registries.ForgeRegistries;
 import rpggods.data.perk.condition.PerkCondition;
+import rpggods.data.perk.condition.TrueCondition;
+import rpggods.util.RGCodecUtils;
 
+import javax.annotation.concurrent.Immutable;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
 
+@Immutable
 public class Sacrifice {
 
-    public static final Sacrifice EMPTY = new Sacrifice(new ResourceLocation("null"), 0, 0, 0, 0,
-            List.of(), Optional.empty(), Optional.empty());
-
     public static final Codec<Sacrifice> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            ResourceLocation.CODEC.optionalFieldOf("entity", new ResourceLocation("null")).forGetter(Sacrifice::getEntity),
+            ForgeRegistries.ENTITY_TYPES.getCodec().fieldOf("entity").forGetter(Sacrifice::getEntity),
             Codec.INT.optionalFieldOf("favor", 0).forGetter(Sacrifice::getFavor),
             Codec.INT.optionalFieldOf("maxuses", 16).forGetter(Sacrifice::getMaxUses),
             Codec.INT.optionalFieldOf("restocks", -1).forGetter(Sacrifice::getRestocks),
             Codec.INT.optionalFieldOf("cooldown", 12000).forGetter(Sacrifice::getCooldown),
-            Codec.either(PerkCondition.CODEC, PerkCondition.CODEC.listOf())
-                    .xmap(either -> either.map(ImmutableList::of, Function.identity()),
-                            list -> list.size() == 1 ? Either.left(list.get(0)) : Either.right(list))
-                    .optionalFieldOf("condition", List.of()).forGetter(Sacrifice::getConditions),
+            PerkCondition.DIRECT_CODEC.optionalFieldOf("condition", TrueCondition.INSTANCE).forGetter(Sacrifice::getCondition),
             ResourceLocation.CODEC.optionalFieldOf("function").forGetter(Sacrifice::getFunction),
-            Codec.STRING.optionalFieldOf("function_text").forGetter(Sacrifice::getFunctionText)
+            Codec.STRING.optionalFieldOf("translation_key").forGetter(Sacrifice::getFunctionTranslationKey)
     ).apply(instance, Sacrifice::new));
 
-    private final ResourceLocation entity;
+    private final EntityType<?> entity;
     private final int favor;
     private final int maxUses;
     private final int restocks;
     private final int cooldown;
-    private final List<PerkCondition> conditions;
+    private final PerkCondition condition;
     private final Optional<ResourceLocation> function;
-    private final Optional<String> functionText;
+    private final Optional<String> functionTranslationKey;
 
-    public Sacrifice(ResourceLocation entity, int favor, int maxUses, int restocks, int cooldown,
-                     List<PerkCondition> conditions,
-                     Optional<ResourceLocation> function, Optional<String> functionText) {
+    public Sacrifice(EntityType<?> entity, int favor, int maxUses, int restocks, int cooldown,
+                     PerkCondition condition,
+                     Optional<ResourceLocation> function, Optional<String> functionTranslationKey) {
         this.entity = entity;
         this.favor = favor;
         this.maxUses = maxUses;
         this.restocks = restocks;
         this.cooldown = cooldown;
-        this.conditions = conditions;
+        this.condition = condition;
         this.function = function;
-        this.functionText = functionText;
+        this.functionTranslationKey = functionTranslationKey;
     }
+
+    //// HELPER METHODS ////
 
     /**
      * @param entry the registry entry
@@ -80,22 +80,9 @@ public class Sacrifice {
         return true;
     }
 
-    /**
-     * Attempts to parse the deity from the given sacrifice id
-     * @param sacrificeId the offering id in the form {@code namespace:deity/sacrificename}
-     * @return the resource location if found, otherwise {@link DeityContainer#EMPTY}
-     */
-    @Deprecated
-    public static ResourceLocation getDeity(final ResourceLocation sacrificeId) {
-        String path = sacrificeId.getPath();
-        int index = path.indexOf("/");
-        if(index > -1) {
-            return new ResourceLocation(sacrificeId.getNamespace(), path.substring(0, index));
-        }
-        return DeityContainer.EMPTY.id;
-    }
+    //// GETTERS ////
 
-    public ResourceLocation getEntity() {
+    public EntityType<?> getEntity() {
         return entity;
     }
 
@@ -115,16 +102,16 @@ public class Sacrifice {
         return cooldown;
     }
 
-    public List<PerkCondition> getConditions() {
-        return conditions;
+    public PerkCondition getCondition() {
+        return condition;
     }
 
     public Optional<ResourceLocation> getFunction() {
         return function;
     }
 
-    public Optional<String> getFunctionText() {
-        return functionText;
+    public Optional<String> getFunctionTranslationKey() {
+        return functionTranslationKey;
     }
 
     public Cooldown createCooldown() {

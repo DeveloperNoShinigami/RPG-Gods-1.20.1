@@ -46,7 +46,7 @@ public class OrCondition extends PerkCondition {
     }
 
     @Override
-    public List<Component> createDescription(final RegistryAccess registryAccess) {
+    public Component createDescription(final RegistryAccess registryAccess) {
 
         final List<Component> builder = new ArrayList<>();
         for(PerkCondition child : children) {

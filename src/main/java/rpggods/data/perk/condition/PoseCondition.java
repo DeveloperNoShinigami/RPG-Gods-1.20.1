@@ -42,7 +42,7 @@ public class PoseCondition extends PerkCondition {
     }
 
     @Override
-    public List<Component> createDescription(RegistryAccess registryAccess) {
+    public Component createDescription(RegistryAccess registryAccess) {
         // TODO pose condition description
         return ImmutableList.of();
     }

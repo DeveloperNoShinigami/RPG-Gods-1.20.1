@@ -14,8 +14,6 @@ import net.minecraft.world.effect.MobEffect;
 import net.minecraftforge.registries.ForgeRegistries;
 import rpggods.RGRegistry;
 
-import java.util.List;
-
 public class EffectStartCondition extends PerkCondition {
 
     public static final Codec<EffectStartCondition> CODEC = ForgeRegistries.MOB_EFFECTS.getCodec()
@@ -34,7 +32,7 @@ public class EffectStartCondition extends PerkCondition {
     }
 
     @Override
-    public List<Component> createDescription(RegistryAccess registryAccess) {
+    public Component createDescription(RegistryAccess registryAccess) {
         return ImmutableList.of(effect.getDisplayName());
     }
 

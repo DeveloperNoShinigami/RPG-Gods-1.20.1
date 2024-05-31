@@ -6,15 +6,12 @@
 
 package rpggods.data.perk.action;
 
-import com.google.common.collect.ImmutableList;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.valueproviders.IntProvider;
 import rpggods.RGRegistry;
-
-import java.util.List;
 
 public class CropYieldAction extends PerkAction {
 
@@ -36,9 +33,9 @@ public class CropYieldAction extends PerkAction {
     }
 
     @Override
-    public List<Component> createDescription(RegistryAccess registryAccess) {
-        // TODO crop yield perk action description using min and max
-        return ImmutableList.of(Component.literal("" + amount.getMaxValue()));
+    public Component createDescription(RegistryAccess registryAccess) {
+        final Component boundsComponent = createBoundsComponent(amount.getMinValue(), amount.getMaxValue());
+        return Component.translatable(PREFIX + "crop_yield" + SUFFIX, boundsComponent);
     }
 
     @Override

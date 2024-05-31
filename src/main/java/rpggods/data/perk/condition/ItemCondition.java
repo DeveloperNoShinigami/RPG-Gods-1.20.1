@@ -18,7 +18,6 @@ import rpggods.RGRegistry;
 import rpggods.util.RGCodecUtils;
 
 import javax.annotation.concurrent.Immutable;
-import java.util.List;
 
 @Immutable
 public class ItemCondition extends PerkCondition {
@@ -54,7 +53,7 @@ public class ItemCondition extends PerkCondition {
     }
 
     @Override
-    public List<Component> createDescription(final RegistryAccess registryAccess) {
+    public Component createDescription(final RegistryAccess registryAccess) {
         // TODO item condition description
         return ImmutableList.of();
     }

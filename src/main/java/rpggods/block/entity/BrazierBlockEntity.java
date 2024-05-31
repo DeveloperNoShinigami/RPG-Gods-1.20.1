@@ -34,7 +34,7 @@ import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.wrapper.InvWrapper;
-import rpggods.RGEvents;
+import rpggods.PerkDispatcher;
 import rpggods.RGRegistry;
 import rpggods.RPGGods;
 import rpggods.block.BrazierBlock;
@@ -118,7 +118,7 @@ public class BrazierBlockEntity extends BlockEntity implements ContainerSingleIt
         final ItemStack offering = removeItem(0, 1);
         final ResourceLocation deity = altar.getDeity().get();
         RPGGods.getFavor(player).ifPresent(favor -> {
-            Optional<ItemStack> result = RGEvents.onOffering(Optional.of(altar), deity, player, favor, offering, true);
+            Optional<ItemStack> result = PerkDispatcher.onOffering(Optional.of(altar), deity, player, favor, offering, true);
             if(!result.isPresent()) {
                 // the offering failed, drop the item stack instead
                 Containers.dropItemStack(level, vec.x, vec.y + 0.5D, vec.z, offering);

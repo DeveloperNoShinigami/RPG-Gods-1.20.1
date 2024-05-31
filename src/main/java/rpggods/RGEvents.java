@@ -6,26 +6,15 @@
 
 package rpggods;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
-import net.minecraft.ChatFormatting;
-import net.minecraft.commands.CommandFunction;
-import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Vec3i;
-import net.minecraft.core.particles.ParticleOptions;
-import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.NeutralMob;
@@ -37,7 +26,6 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.ai.goal.MeleeAttackGoal;
 import net.minecraft.world.entity.animal.Animal;
-import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.monster.RangedAttackMob;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.AbstractArrow;
@@ -47,8 +35,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.trading.Merchant;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityAttributeModificationEvent;
@@ -60,33 +46,20 @@ import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.entity.living.MobEffectEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.event.entity.player.PlayerXpEvent;
-import net.minecraftforge.eventbus.api.Event;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.server.ServerLifecycleHooks;
 import org.apache.commons.lang3.tuple.ImmutablePair;
-import rpggods.data.deity.Cooldown;
-import rpggods.data.deity.DeityContainer;
-import rpggods.data.deity.Offering;
-import rpggods.data.deity.Sacrifice;
-import rpggods.data.favor.Favor;
 import rpggods.data.favor.IFavor;
-import rpggods.data.perk.Perk;
 import rpggods.data.perk.action.PerkAction;
 import rpggods.data.perk.condition.PerkCondition;
 import rpggods.data.tameable.ITameable;
 import rpggods.data.tameable.Tameable;
 import rpggods.entity.AffinityGoal;
-import rpggods.entity.AltarEntity;
 import rpggods.network.SUpdateSittingPacket;
 import rpggods.util.FavorChangedEvent;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -95,394 +68,7 @@ public class RGEvents {
 
     public static final int COMBAT_TIMER = 40;
 
-    /**
-     * Called when the player attempts to give an offering
-     * @param entity the AltarEntity associated with this offering, if any
-     * @param deity the deity ID
-     * @param player the player
-     * @param favor the player's favor
-     * @param item the item being offered
-     * @param silent true if the player should not receive any feedback
-     * @return the ItemStack to replace the one provided, if any
-     */
-    public static Optional<ItemStack> onOffering(final Optional<AltarEntity> entity, final ResourceLocation deity, final Player player, final IFavor favor, final ItemStack item, boolean silent) {
-        boolean deityEnabled = favor.getFavor(deity).isEnabled();
-        if(favor.isEnabled() && deityEnabled && !item.isEmpty()) {
-            // find first matching offering for the given deity
-            ResourceLocation offeringId = null;
-            Offering offering = null;
-            for(ResourceLocation id : RPGGods.DEITY_HELPER.get(deity).offeringMap.getOrDefault(ForgeRegistries.ITEMS.getKey(item.getItem()), ImmutableList.of())) {
-                Offering o = RPGGods.OFFERING_MAP.get(id);
-                if(o != null && o.matches(item)) {
-                    offeringId = id;
-                    offering = o;
-                    break;
-                }
-            }
-            // process the offering
-            if(offering != null && offeringId != null) {
-                // ensure offering can be accepted
-                if(!favor.getOfferingCooldown(offeringId).canUse()) {
-                    // send message to player informing them of maxed offering
-                    if(!silent) {
-                        Component message = Component.translatable("favor.offering.cooldown");
-                        player.displayClientMessage(message, true);
-                    }
-                    return Optional.empty();
-                }
-                // ensure player meets level requirement, if any
-                int level = favor.getFavor(deity).getLevel();
-                if(offering.hasLevelRange() && (level < offering.getTradeMinLevel() || level > offering.getTradeMaxLevel())) {
-                    // Send message to player informing them of level requirements
-                    if(!silent) {
-                        Component message;
-                        if(offering.hasMinLevel() && offering.hasMaxLevel()) {
-                            message = Component.translatable("favor.offering.deny.level().multiple", offering.getTradeMinLevel(), offering.getTradeMaxLevel());
-                        } else {
-                            message = Component.translatable("favor.offering.deny.level().single", offering.getTradeMinLevel());
-                        }
-                        player.displayClientMessage(message, true);
-                    }
-                    return Optional.empty();
-                }
-                // add favor and run function, if any
-                favor.getFavor(deity).addFavor(player, deity, offering.getFavor(), FavorChangedEvent.Source.OFFERING);
-                offering.getFunction().ifPresent(f -> runFunction(player.level(), player, f));
-                // add cooldown
-                favor.getOfferingCooldown(offeringId).addUse();
-                // process trade, if any
-                Optional<ItemStack> trade = offering.getTrade(item);
-                if(trade.isPresent() && !trade.get().isEmpty()) {
-                    ItemEntity itemEntity = new ItemEntity(player.level(), player.getX(), player.getY(), player.getZ(), trade.get().copy());
-                    itemEntity.setNoPickUpDelay();
-                    player.level().addFreshEntity(itemEntity);
-                }
-                // shrink item stack
-                if(!player.isCreative()) {
-                    item.shrink(offering.getAccept().getCount());
-                }
-                // particles
-                if(entity.isPresent() && player.level() instanceof ServerLevel serverLevel) {
-                    Vec3 pos = Vec3.atBottomCenterOf(entity.get().blockPosition().above());
-                    ParticleOptions particle = offering.getFavor() >= 0 ? ParticleTypes.HAPPY_VILLAGER : ParticleTypes.ANGRY_VILLAGER;
-                    serverLevel.sendParticles(particle, pos.x, pos.y, pos.z, 8, 0.5D, 0.5D, 0.5D, 0);
-                }
-                // send player message
-                if(!silent) {
-                    favor.getFavor(deity).sendStatusMessage(player, deity);
-                }
-                return Optional.of(item);
-            }
-        }
-        return Optional.empty();
-    }
-
-    /**
-     * Called when the player kills a living entity
-     *
-     * @param player the player
-     * @param favor  the player's favor
-     * @param entity the entity that was killed
-     * @return true if the player's favor was modified
-     */
-    public static boolean onSacrifice(final Player player, final IFavor favor, final LivingEntity entity) {
-        boolean success = false;
-        ResourceLocation entityId = ForgeRegistries.ENTITY_TYPES.getKey(entity.getType());
-        Optional<ResourceLocation> optionalEntityId = Optional.of(entityId);
-        Optional<CompoundTag> optionalEntityTag = Optional.of(entity.serializeNBT());
-        if (favor.isEnabled()) {
-            // find and process all matching sacrifices
-            ResourceLocation deityId;
-            Sacrifice sacrifice;
-            Cooldown cooldown;
-            for (Map.Entry<ResourceLocation, Sacrifice> entry : RPGGods.SACRIFICE_MAP.entrySet()) {
-                if (entry.getValue() != null) {
-                    sacrifice = entry.getValue();
-                    // check sacrifice matches entity that was killed
-                    if (entityId.equals(sacrifice.getEntity())) {
-                        // check sacrifice cooldown
-                        cooldown = favor.getSacrificeCooldown(entry.getKey());
-                        deityId = Sacrifice.getDeity(entry.getKey());
-                        boolean deityEnabled = favor.getFavor(deityId).isEnabled();
-                        if (deityEnabled && cooldown.canUse()) {
-                            // check sacrifice conditions
-                            boolean matchConditions = true;
-                            for (PerkCondition condition : sacrifice.getConditions()) {
-                                if (!condition.test(deityId)) {
-                                    matchConditions = false;
-                                    break;
-                                }
-                            }
-                            // attempt to process the sacrifice
-                            if (sacrifice.getConditions().isEmpty() || matchConditions) {
-                                success = true;
-                                // add sacrifice cooldown
-                                cooldown.addUse();
-                                // add favor and run function, if any
-                                favor.getFavor(deityId).addFavor(player, deityId, sacrifice.getFavor(), FavorChangedEvent.Source.SACRIFICE);
-                                sacrifice.getFunction().ifPresent(f -> runFunction(player.level(), player, f));
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        return success;
-    }
-
-    /**
-     * Loads all perks that match the given {@link PerkCondition.Type} and
-     * attempts to run them.
-     *
-     * @param type   The Perk Condition Type to run
-     * @param player The player
-     * @param favor  The player's favor
-     * @param entity An entity associated with this condition, if any
-     * @param data   A ResourceLocation associated with this condition, if any
-     * @param object An event associated with this condition, if any
-     * @return true if at least one perk ran successfully
-     */
-    public static boolean triggerCondition(final PerkCondition.Type type, final Player player, final IFavor favor,
-                                           final Optional<Entity> entity, final Optional<ResourceLocation> data,
-                                           final Optional<? extends Event> object) {
-        boolean success = false;
-        if (favor.isEnabled()) {
-            // find matching perks (use set to ensure no duplicates)
-            Set<ResourceLocation> perks = new HashSet<>();
-            for (DeityContainer helper : RPGGods.DEITY_HELPER.values()) {
-                boolean deityEnabled = favor.getFavor(helper.id).isEnabled();
-                if (deityEnabled) {
-                    perks.addAll(helper.perkByConditionMap.getOrDefault(type, ImmutableList.of()));
-                }
-            }
-            // shuffle perks
-            List<ResourceLocation> perkList = Lists.newArrayList(perks);
-            Collections.shuffle(perkList);
-            // run each perk
-            Perk perk;
-            for (ResourceLocation id : perkList) {
-                perk = RPGGods.PERK_MAP.get(id);
-                success |= runPerk(perk, player, favor, entity, data, object);
-            }
-        }
-        return success;
-    }
-
-    /**
-     * Loads all perks with the given {@link PerkAction.Type} and attempts to run each one.
-     *
-     * @param type   the action type (eg, function, item, potion, summon, arrow, xp)
-     * @param player the player
-     * @param favor  the player's favor
-     * @param entity an entity to use when running the perk, if any
-     * @return True if at least one perk ran successfully
-     */
-    public static boolean triggerPerks(final PerkAction.Type type, final Player player, final IFavor favor, final Optional<Entity> entity) {
-        return triggerPerks(type, player, favor, entity, Optional.empty(), Optional.empty());
-    }
-
-    /**
-     * Loads all perks with the given {@link PerkAction.Type} and attempts to run each one.
-     *
-     * @param type   the action type (eg, function, item, potion, summon, arrow, xp)
-     * @param player the player
-     * @param favor  the player's favor
-     * @param entity an entity to use when running the perk, if any
-     * @param data   a ResourceLocation ID to use when running the perk, if any
-     * @param object the Event to reference when running the perk, if any
-     * @return True if at least one perk ran successfully
-     */
-    public static boolean triggerPerks(final PerkAction.Type type, final Player player, final IFavor favor,
-                                       final Optional<Entity> entity, final Optional<ResourceLocation> data,
-                                       final Optional<? extends Event> object) {
-        boolean success = false;
-        if (favor.isEnabled()) {
-            // find matching perks
-            List<ResourceLocation> perks = new ArrayList<>();
-            for (DeityContainer helper : RPGGods.DEITY_HELPER.values()) {
-                boolean deityEnabled = favor.getFavor(helper.id).isEnabled();
-                if (deityEnabled) {
-                    perks.addAll(helper.perkByActionMap.getOrDefault(type, ImmutableList.of()));
-                }
-            }
-            // shuffle perks
-            Collections.shuffle(perks);
-            // run each perk
-            Perk perk;
-            for (ResourceLocation id : perks) {
-                perk = RPGGods.PERK_MAP.get(id);
-                success |= runPerk(perk, player, favor, entity, data, object);
-            }
-        }
-        return success;
-    }
-
-    /**
-     * Loads and runs a single function at the entity position
-     *
-     * @param worldIn    the world
-     * @param entity     the entity (for example, a player)
-     * @param functionId the function ID of a function to run
-     * @return true if the function ran successfully
-     */
-    public static boolean runFunction(final Level worldIn, final LivingEntity entity, ResourceLocation functionId) {
-        final MinecraftServer server = worldIn.getServer();
-        if (server != null) {
-            final net.minecraft.server.ServerFunctionManager manager = server.getFunctions();
-            final Optional<CommandFunction> function = manager.get(functionId);
-            if (function.isPresent()) {
-                final CommandSourceStack commandSource = manager.getGameLoopSender()
-                        .withEntity(entity)
-                        .withPosition(entity.position())
-                        .withPermission(4)
-                        .withSuppressedOutput();
-                manager.execute(function.get(), commandSource);
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Attempts to run a single perk and sets a cooldown if successful.
-     * Checks favor range, cooldown, random chance, and conditions before running the perk.
-     *
-     * @param perk   the Perk to run
-     * @param player the player to affect
-     * @param favor  the player's favor
-     * @return True if the perk was run and cooldown was added.
-     * @see #runPerk(Perk, Player, IFavor, Optional, Optional, Optional)
-     */
-    public static boolean runPerk(final Perk perk, final Player player, final IFavor favor) {
-        return runPerk(perk, player, favor, Optional.empty(), Optional.empty(), Optional.empty());
-    }
-
-    /**
-     * Attempts to run a single perk and sets a cooldown if successful.
-     * Checks favor range, cooldown, random chance, and conditions before running the perk.
-     *
-     * @param perk   the Perk to run
-     * @param player the player to affect
-     * @param favor  the player's favor
-     * @param entity an entity to use when running the perk, if any
-     * @param data   a ResourceLocation ID to use when running the perk, if any
-     * @param object the Event to reference when running the perk, if any
-     * @return True if the perk was run and cooldown was added.
-     */
-    public static boolean runPerk(final Perk perk, final Player player, final IFavor favor, final Optional<Entity> entity,
-                                  final Optional<ResourceLocation> data, final Optional<? extends Event> object) {
-        // check favor range, perk cooldown, and random chance
-        if (perk != null && !player.level().isClientSide && perk.getRange().isInRange(favor)
-                && favor.getFavor(perk.getDeity()).isEnabled()
-                && favor.hasNoPerkCooldown(perk.getCategory())
-                && Math.random() < perk.getAdjustedChance(favor.getFavor(perk.getDeity()))) {
-            // load nbt data
-            Optional<CompoundTag> nbt = Optional.empty();
-            if (entity.isPresent()) {
-                nbt = Optional.ofNullable(entity.get().serializeNBT());
-            }
-            // check perk conditions
-            for (final PerkCondition condition : perk.getConditions()) {
-                if (!condition.test(perk.getDeity())) {
-                    return false;
-                }
-            }
-            boolean success = false;
-            for (final PerkAction action : perk.getActions()) {
-                success |= action.run(perk.getDeity(), player, favor, entity, data, object);
-            }
-            if (success) {
-                // send feedback
-                sendPerkFeedback(perk.getDeity(), player, favor, perk.isPositive());
-                // apply cooldown
-                long cooldown = (long) Math.floor(perk.getCooldown() * (1.0D + Math.random() * 0.25D));
-                favor.setPerkCooldown(perk.getCategory(), cooldown);
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    public static void sendPerkFeedback(ResourceLocation deity, Player player, IFavor favor, boolean isPositive) {
-        if (RPGGods.CONFIG.canGiveFeedback()) {
-            final Component deityName = DeityContainer.getName(deity);
-            final Component message;
-            if (isPositive) {
-                message = Component.translatable("favor.perk.feedback.positive", deityName).withStyle(ChatFormatting.GREEN);
-            } else {
-                message = Component.translatable("favor.perk.feedback.negative", deityName).withStyle(ChatFormatting.RED);
-            }
-            player.displayClientMessage(message, !RPGGods.CONFIG.isFeedbackChat());
-        }
-    }
-
-    /**
-     * @param altar   the altar entity
-     * @param deityId the Deity ID of the deity for this altar
-     * @return true if a ritual was detected and patron was changed
-     */
-    public static boolean performRitual(final AltarEntity altar, final ResourceLocation deityId) {
-        Vec3i facing = altar.getDirection().getNormal();
-        BlockPos pos = altar.blockPosition().offset(facing);
-        AABB aabb = new AABB(pos).inflate(0.15D, 1.0D, 0.15D);
-        List<ItemEntity> list = altar.level().getEntitiesOfClass(ItemEntity.class, aabb, e -> e.isOnFire());
-        // detect first burning item in list
-        if (list.isEmpty()) {
-            return false;
-        }
-        ItemEntity item = list.get(0);
-        // detect player who threw the item
-        if (null == item.getOwner()) {
-            return false;
-        }
-        Player player = altar.level().getPlayerByUUID(item.getOwner().getUUID());
-        if (null == player) {
-            return false;
-        }
-        // detect ritual perks for this deity
-        ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(item.getItem().getItem());
-        if (null == itemId) {
-            return false;
-        }
-        DeityContainer deity = RPGGods.DEITY_HELPER.computeIfAbsent(deityId, DeityContainer::new);
-        List<ResourceLocation> perkIds = deity.perkByConditionMap
-                .getOrDefault(PerkCondition.Type.RITUAL, ImmutableList.of());
-        // create list using perk IDs
-        List<Perk> perks = new ArrayList<>();
-        for (ResourceLocation perkId : perkIds) {
-            perks.add(RPGGods.PERK_MAP.getOrDefault(perkId, Perk.EMPTY));
-        }
-        // load favor
-        boolean success = false;
-        LazyOptional<IFavor> ifavor = RPGGods.getFavor(player);
-        if (ifavor.isPresent()) {
-            IFavor favor = ifavor.orElse(Favor.EMPTY);
-            // attempt to run the perks
-            if (favor.isEnabled()) {
-                for (Perk perk : perks) {
-                    success |= runPerk(perk, player, favor, Optional.of(altar), Optional.of(itemId), Optional.empty());
-                }
-            }
-            // send feedback
-            if (success && favor.getPatron().isPresent()) {
-                // summon visual lightning bolt
-                LightningBolt bolt = EntityType.LIGHTNING_BOLT.create(altar.level());
-                bolt.setVisualOnly(true);
-                Vec3 position = Vec3.atBottomCenterOf(pos.below());
-                bolt.setPos(position.x, position.y, position.z);
-                altar.level().addFreshEntity(bolt);
-                // send message
-                Component message = Component.translatable("favor.perk.type.patron.description.add", DeityContainer.getName(favor.getPatron().get()))
-                        .withStyle(ChatFormatting.LIGHT_PURPLE, ChatFormatting.BOLD);
-                player.displayClientMessage(message, true);
-            }
-        }
-
-        return success;
-    }
-
-    public static class ModEvents {
+    public static class ModHandler {
 
         @SubscribeEvent
         public static void onAddEntityAttributes(final EntityAttributeModificationEvent event) {
@@ -494,30 +80,33 @@ public class RGEvents {
         }
     }
 
-    public static class ForgeEvents {
+    public static class ForgeHandler {
 
         @SubscribeEvent
         public static void onLivingDeath(final LivingDeathEvent event) {
             if (!event.isCanceled() && event.getEntity() != null && !event.getEntity().level().isClientSide() && event.getEntity().isEffectiveAi()) {
-                if (event.getEntity() instanceof Player) {
-                    final Player player = (Player) event.getEntity();
+                if (event.getEntity() instanceof ServerPlayer player) {
                     final Entity source = event.getSource().getEntity();
+                    final ResourceLocation entityType = ForgeRegistries.ENTITY_TYPES.getKey(source.getType());
                     // onEntityKillPlayer
                     if (source instanceof LivingEntity && !player.isSpectator() && !player.isCreative()) {
                         RPGGods.getFavor(player).ifPresent(f -> {
-                            triggerCondition(PerkCondition.Type.ENTITY_KILLED_PLAYER, player, f, Optional.of(source),
-                                    Optional.ofNullable(ForgeRegistries.ENTITY_TYPES.getKey(source.getType())),
-                                    Optional.empty());
+                            PerkDispatcher.invoke(player, f)
+                                    .withData(entityType)
+                                    .withEntity(source)
+                                    .runForCondition(RGRegistry.PerkConditionReg.ENTITY_KILLED_PLAYER.get());
                         });
                     }
-                } else if (event.getSource().getEntity() instanceof Player) {
-                    final Player player = (Player) event.getSource().getEntity();
+                } else if (event.getSource().getEntity() instanceof ServerPlayer player) {
+                    final ResourceLocation entityType = ForgeRegistries.ENTITY_TYPES.getKey(event.getEntity().getType());
                     // onPlayerKillEntity
                     RPGGods.getFavor(player).ifPresent(f -> {
-                        triggerCondition(PerkCondition.Type.PLAYER_KILLED_ENTITY, player, f, Optional.of(event.getEntity()),
-                                Optional.ofNullable(ForgeRegistries.ENTITY_TYPES.getKey(event.getEntity().getType())),
-                                Optional.empty());
-                        onSacrifice(player, f, event.getEntity());
+                        PerkDispatcher.invoke(player, f)
+                                .withData(entityType)
+                                .withEntity(event.getEntity())
+                                .runForCondition(RGRegistry.PerkConditionReg.ENTITY_KILLED_BY_PLAYER.get());
+
+                        PerkDispatcher.onSacrifice(player, f, event.getEntity());
                     });
                 }
                 // onTameDeath
@@ -536,28 +125,35 @@ public class RGEvents {
         @SubscribeEvent
         public static void onLivingHurt(final LivingHurtEvent event) {
             if (!event.isCanceled() && !event.getEntity().level().isClientSide() && event.getEntity().isEffectiveAi() && event.getEntity().isAlive()) {
-                if (event.getSource().getDirectEntity() != null && event.getEntity() instanceof Player) {
-                    Player player = (Player) event.getEntity();
+                if (event.getSource().getDirectEntity() != null && event.getEntity() instanceof ServerPlayer player) {
                     Entity source = event.getSource().getDirectEntity();
+                    ResourceLocation entityType = ForgeRegistries.ENTITY_TYPES.getKey(source.getType());
                     if (!player.isSpectator() && !player.isCreative()) {
                         // onEntityHurtPlayer
                         RPGGods.getFavor(player).ifPresent(f -> {
-                            triggerCondition(PerkCondition.Type.ENTITY_HURT_PLAYER, player, f, Optional.of(source),
-                                    Optional.ofNullable(ForgeRegistries.ENTITY_TYPES.getKey(source.getType())), Optional.of(event));
+                            PerkDispatcher.invoke(player, f)
+                                    .withData(entityType)
+                                    .withEntity(source)
+                                    .withEvent(event)
+                                    .runForCondition(RGRegistry.PerkConditionReg.ENTITY_HURT_PLAYER.get());
                         });
                     }
-                } else if (event.getSource().getDirectEntity() instanceof Player) {
-                    Player player = (Player) event.getSource().getDirectEntity();
+                } else if (event.getSource().getDirectEntity() instanceof ServerPlayer player) {
                     LivingEntity target = event.getEntity();
+                    ResourceLocation entityType = ForgeRegistries.ENTITY_TYPES.getKey(target.getType());
                     // onPlayerHurtEntity
                     RPGGods.getFavor(player).ifPresent(f -> {
-                        triggerCondition(PerkCondition.Type.PLAYER_HURT_ENTITY, player, f, Optional.of(target),
-                                Optional.ofNullable(ForgeRegistries.ENTITY_TYPES.getKey(target.getType())), Optional.of(event));
+                        PerkDispatcher.invoke(player, f)
+                                .withData(entityType)
+                                .withEntity(target)
+                                .withEvent(event)
+                                .runForCondition(RGRegistry.PerkConditionReg.ENTITY_HURT_BY_PLAYER.get());
                         // onEnterCombat
                         if (player.getCombatTracker().getCombatDuration() < COMBAT_TIMER) {
-                            triggerCondition(PerkCondition.Type.ENTER_COMBAT, player, f,
-                                    Optional.of(target), Optional.of(ForgeRegistries.ENTITY_TYPES.getKey(target.getType())),
-                                    Optional.empty());
+                            PerkDispatcher.invoke(player, f)
+                                    .withData(entityType)
+                                    .withEntity(target)
+                                    .runForCondition(RGRegistry.PerkConditionReg.COMBAT_START.get());
                         }
                     });
                 }
@@ -566,14 +162,24 @@ public class RGEvents {
 
         @SubscribeEvent
         public static void onEntityInteract(final PlayerInteractEvent.EntityInteract event) {
-            if (!event.getEntity().level().isClientSide && event.getHand() == InteractionHand.MAIN_HAND) {
+            if (event.getHand() == InteractionHand.MAIN_HAND && event.getEntity() instanceof ServerPlayer player) {
+                final ItemStack itemStack = event.getItemStack();
+                final ResourceLocation entityType = ForgeRegistries.ENTITY_TYPES.getKey(event.getTarget().getType());
                 // onPlayerInteractEntity
-                RPGGods.getFavor(event.getEntity()).ifPresent(f -> {
-                    final ResourceLocation id = ForgeRegistries.ENTITY_TYPES.getKey(event.getTarget().getType());
-                    if (triggerCondition(PerkCondition.Type.PLAYER_INTERACT_ENTITY, event.getEntity(), f, Optional.of(event.getTarget()), Optional.ofNullable(id), Optional.empty())) {
+                RPGGods.getFavor(player).ifPresent(f -> {
+                    if(PerkDispatcher.invoke(player, f)
+                            .withData(entityType)
+                            .withEntity(event.getTarget())
+                            .withItemStack(itemStack)
+                            .runForCondition(RGRegistry.PerkConditionReg.ENTITY_INTERACT_BY_PLAYER.get())) {
                         event.setCancellationResult(InteractionResult.SUCCESS);
                     }
-                    if (event.getTarget() instanceof Merchant && triggerPerks(PerkAction.Type.SPECIAL_PRICE, event.getEntity(), f, Optional.of(event.getTarget()), Optional.ofNullable(id), Optional.of(event))) {
+                    if (event.getTarget() instanceof Merchant
+                            && PerkDispatcher.invoke(player, f)
+                                    .withData(entityType)
+                                    .withEntity(event.getTarget())
+                                    .withEvent(event)
+                                    .runForAction(RGRegistry.PerkActionReg.MERCHANT_PRICE.get())) {
                         event.setCancellationResult(event.isCanceled() ? InteractionResult.FAIL : InteractionResult.SUCCESS);
                     }
                 });
@@ -594,14 +200,17 @@ public class RGEvents {
 
         @SubscribeEvent
         public static void onInteractBlock(final PlayerInteractEvent.RightClickBlock event) {
-            if (!event.getEntity().level().isClientSide) {
+            if (event.getEntity() instanceof ServerPlayer player) {
                 BlockState state = event.getEntity().level().getBlockState(event.getHitVec().getBlockPos());
                 ResourceLocation blockId = ForgeRegistries.BLOCKS.getKey(state.getBlock());
                 if (blockId != null) {
                     // onPlayerInteractBlock
-                    RPGGods.getFavor(event.getEntity()).ifPresent(f -> {
-                        triggerCondition(PerkCondition.Type.PLAYER_INTERACT_BLOCK, event.getEntity(), f, Optional.empty(),
-                                Optional.of(blockId), Optional.empty());
+                    RPGGods.getFavor(player).ifPresent(f -> {
+                        PerkDispatcher.invoke(player, f)
+                                .withData(blockId)
+                                .withBlockState(state)
+                                .withItemStack(event.getItemStack())
+                                .runForCondition(RGRegistry.PerkConditionReg.USE_BLOCK.get());
                     });
                 }
             }
@@ -609,10 +218,11 @@ public class RGEvents {
 
         @SubscribeEvent
         public static void onChangeFavor(FavorChangedEvent.Post event) {
-            if (event.getPlayer() != null && !event.getPlayer().level().isClientSide && event.isLevelChange()) {
+            if (event.isLevelChange() && event.getPlayer() instanceof ServerPlayer player) {
                 // onFavorChanged
                 RPGGods.getFavor(event.getPlayer()).ifPresent(f -> {
-                    triggerPerks(PerkAction.Type.UNLOCK, event.getPlayer(), f, Optional.empty());
+                    PerkDispatcher.invoke(player, f)
+                            .runForAction(RGRegistry.PerkActionReg.UNLOCK.get());
                 });
             }
         }
@@ -626,12 +236,14 @@ public class RGEvents {
             if (!event.getEntity().level().isClientSide && (event.getEntity() instanceof Arrow || event.getEntity() instanceof SpectralArrow)) {
                 final AbstractArrow arrow = (AbstractArrow) event.getEntity();
                 final Entity thrower = arrow.getOwner();
-                if (thrower instanceof Player) {
+                if (thrower instanceof ServerPlayer player) {
                     // onArrowDamage, onArrowEffect, onArrowCount
                     RPGGods.getFavor(thrower).ifPresent(f -> {
-                        triggerPerks(PerkAction.Type.ARROW_DAMAGE, (Player) thrower, f, Optional.of(arrow));
-                        triggerPerks(PerkAction.Type.ARROW_EFFECT, (Player) thrower, f, Optional.of(arrow));
-                        triggerPerks(PerkAction.Type.ARROW_COUNT, (Player) thrower, f, Optional.of(arrow));
+                        PerkDispatcher.Invoker invoker = PerkDispatcher.invoke(player, f)
+                                .withEntity(arrow);
+                        invoker.runForAction(RGRegistry.PerkActionReg.ARROW_DAMAGE.get());
+                        invoker.runForAction(RGRegistry.PerkActionReg.ARROW_EFFECT.get());
+                        invoker.runForAction(RGRegistry.PerkActionReg.ARROW_COUNT.get());
                     });
                 }
             }
@@ -691,16 +303,16 @@ public class RGEvents {
 
         @SubscribeEvent
         public static void onAddPotion(final MobEffectEvent.Added event) {
-            if (!event.isCanceled() && event.getEntity() instanceof Player && !event.getEntity().level().isClientSide
-                    && event.getEntity().isAlive() && event.getEffectInstance() != null) {
-                Player player = (Player) event.getEntity();
-                if (!player.isSpectator() && !player.isCreative()) {
-                    // onEffectStart
-                    RPGGods.getFavor(player).ifPresent(f -> {
-                        triggerCondition(PerkCondition.Type.EFFECT_START, player, f, Optional.empty(),
-                                Optional.ofNullable(ForgeRegistries.MOB_EFFECTS.getKey(event.getEffectInstance().getEffect())), Optional.empty());
-                    });
-                }
+            if (!event.isCanceled() && event.getEntity() instanceof ServerPlayer player
+                    && player.isAlive() && !player.isSpectator() && !player.isCreative()
+                    && event.getEffectInstance() != null) {
+                final ResourceLocation effectId = ForgeRegistries.MOB_EFFECTS.getKey(event.getEffectInstance().getEffect());
+                // onEffectStart
+                RPGGods.getFavor(player).ifPresent(f -> {
+                    PerkDispatcher.invoke(player, f)
+                            .withData(effectId)
+                            .runForCondition(RGRegistry.PerkConditionReg.EFFECT_START.get());
+                });
             }
         }
 
@@ -718,20 +330,26 @@ public class RGEvents {
 
         @SubscribeEvent
         public static void onBabySpawn(final BabyEntitySpawnEvent event) {
-            if (!event.isCanceled() && event.getParentA().isEffectiveAi() && event.getCausedByPlayer() != null
-                    && !event.getCausedByPlayer().isCreative() && !event.getCausedByPlayer().isSpectator()
+            if (!event.isCanceled() && !event.getParentA().level().isClientSide()
+                    && event.getCausedByPlayer() instanceof ServerPlayer player
+                    && !player.isCreative() && !player.isSpectator()
                     && event.getParentA() instanceof Animal && event.getParentB() instanceof Animal) {
-                RPGGods.getFavor(event.getCausedByPlayer()).ifPresent(f -> {
-                    triggerPerks(PerkAction.Type.OFFSPRING, event.getCausedByPlayer(), f, Optional.of(event.getParentA()), Optional.empty(), Optional.of(event));
+                RPGGods.getFavor(player).ifPresent(f -> {
+                    PerkDispatcher.invoke(player, f)
+                            .withEntity(event.getParentA())
+                            .withEvent(event)
+                            .runForAction(RGRegistry.PerkActionReg.OFFSPRING.get());
                 });
             }
         }
 
         @SubscribeEvent
         public static void onPlayerPickupXp(final PlayerXpEvent.PickupXp event) {
-            if (event.getEntity().isEffectiveAi() && !event.getEntity().level().isClientSide()) {
+            if (!event.getEntity().level().isClientSide() && event.getEntity() instanceof ServerPlayer player) {
                 RPGGods.getFavor(event.getEntity()).ifPresent(f -> {
-                    triggerPerks(PerkAction.Type.XP, event.getEntity(), f, Optional.of(event.getOrb()));
+                    PerkDispatcher.invoke(player, f)
+                            .withEntity(event.getOrb())
+                            .runForAction(RGRegistry.PerkActionReg.XP.get());
                 });
             }
         }
@@ -744,8 +362,8 @@ public class RGEvents {
                     // trigger perks
                     if (Math.random() < RPGGods.CONFIG.getRandomPerkChance()) {
                         // onRandomTick
-                        triggerCondition(PerkCondition.Type.RANDOM_TICK, event.player, f, Optional.empty(),
-                                Optional.empty(), Optional.empty());
+                        PerkDispatcher.invoke((ServerPlayer) event.player, f)
+                                .runForCondition(RGRegistry.PerkConditionReg.RANDOM_TICK.get());
                     }
                     // player tick
                     if(RPGGods.CONFIG.usePlayerFavor()) {
@@ -815,7 +433,7 @@ public class RGEvents {
         }
     }
 
-    public static class ClientEvents {
+    public static class ClientHandler {
 
         @SubscribeEvent
         public static void onRenderLiving(final net.minecraftforge.client.event.RenderLivingEvent.Pre<?, ?> event) {

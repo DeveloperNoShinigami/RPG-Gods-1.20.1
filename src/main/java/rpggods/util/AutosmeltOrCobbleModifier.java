@@ -13,6 +13,7 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.Entity;
@@ -29,7 +30,7 @@ import net.minecraftforge.common.loot.LootModifier;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.items.ItemHandlerHelper;
 import net.minecraftforge.registries.ForgeRegistries;
-import rpggods.RGEvents;
+import rpggods.PerkDispatcher;
 import rpggods.RPGGods;
 import rpggods.data.deity.DeityContainer;
 import rpggods.data.favor.IFavor;
@@ -83,9 +84,8 @@ public class AutosmeltOrCobbleModifier extends LootModifier {
             unsmelt.addAll(deity.perkByActionMap.getOrDefault(PerkAction.Type.UNSMELT, ImmutableList.of()));
         }
         // make sure this is an ore mined by a non-creative player
-        if (entity instanceof Player && !entity.isSpectator() && !((Player) entity).isCreative()
+        if (entity instanceof ServerPlayer player && !entity.isSpectator() && !player.isCreative()
                 && (!autosmelt.isEmpty() || !unsmelt.isEmpty())) {
-            final Player player = (Player) entity;
             final LazyOptional<IFavor> favor = RPGGods.getFavor(player);
             // determine results using player favor
             if(favor.isPresent() && favor.orElse(null).isEnabled()) {
@@ -96,7 +96,7 @@ public class AutosmeltOrCobbleModifier extends LootModifier {
                 Perk perk;
                 for(ResourceLocation id : autosmelt) {
                     perk = RPGGods.PERK_MAP.get(id);
-                    if(RGEvents.runPerk(perk, player, f)) {
+                    if(PerkDispatcher.runPerk(perk, player, f)) {
                         generatedLoot.forEach((stack) -> replacement.add(smelt(stack, context)));
                         return replacement;
                     }
@@ -105,7 +105,7 @@ public class AutosmeltOrCobbleModifier extends LootModifier {
                 Collections.shuffle(unsmelt);
                 for(ResourceLocation id : unsmelt) {
                     perk = RPGGods.PERK_MAP.get(id);
-                    if(RGEvents.runPerk(perk, player, f)) {
+                    if(PerkDispatcher.runPerk(perk, player, f)) {
                         replacement.add(new ItemStack(stone.asItem()));
                         return replacement;
                     }

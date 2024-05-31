@@ -373,6 +373,7 @@ public final class RGRegistry {
     }
 
     public static final class PerkActionReg {
+
         private static void register() {
             PERK_ACTION_TYPES.register(FMLJavaModLoadingContext.get().getModEventBus());
             PERK_ACTIONS.register(FMLJavaModLoadingContext.get().getModEventBus());

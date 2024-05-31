@@ -59,7 +59,7 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.network.NetworkHooks;
 import net.minecraftforge.network.PacketDistributor;
-import rpggods.RGEvents;
+import rpggods.PerkDispatcher;
 import rpggods.RGRegistry;
 import rpggods.RPGGods;
 import rpggods.block.AltarLightBlock;
@@ -313,7 +313,7 @@ public class AltarEntity extends LivingEntity implements ContainerListener {
                 DeityContainer helper = RPGGods.DEITY_HELPER.computeIfAbsent(getDeity().get(), DeityContainer::new);
                 if(!helper.perkByConditionMap.getOrDefault(PerkCondition.Type.RITUAL, ImmutableList.of()).isEmpty()) {
                     // onPerformRitual
-                    RGEvents.performRitual(this, getDeity().get());
+                    PerkDispatcher.performRitual(this, getDeity().get());
                 }
             }
             // attempt to place light block
@@ -422,7 +422,7 @@ public class AltarEntity extends LivingEntity implements ContainerListener {
                     ItemStack heldItem = player.getItemInHand(hand);
                     if(!heldItem.isEmpty()) {
                         // attempt to process held item as offering
-                        Optional<ItemStack> offeringResult = RGEvents.onOffering(Optional.of(this), deity, player, ifavor, heldItem, false);
+                        Optional<ItemStack> offeringResult = PerkDispatcher.onOffering(Optional.of(this), deity, player, ifavor, heldItem, false);
                         // if offering succeeded, update player inventory
                         if (offeringResult.isPresent()) {
                             player.setItemInHand(hand, offeringResult.get());
@@ -589,7 +589,7 @@ public class AltarEntity extends LivingEntity implements ContainerListener {
         setBlockSlot(new ItemStack(altar.getItems().getBlock().asItem()));
         // custom name
         if (altar.getDeity().isPresent()) {
-            setCustomName(DeityContainer.getName(altarId));
+            setCustomName(DeityContainer.createName(altarId));
         } else if (altar.getName().isPresent()) {
             setCustomName(Component.literal(altar.getName().get()));
         }
@@ -620,7 +620,7 @@ public class AltarEntity extends LivingEntity implements ContainerListener {
             // determine string to save deity name
             ResourceLocation deityId = altar.getDeity().get();
             deity = Optional.ofNullable(RPGGods.DEITY_MAP.get(deityId));
-            customName = DeityContainer.getName(altarId);
+            customName = DeityContainer.createName(altarId);
             compoundTag.putString(KEY_DEITY, deityId.toString());
         }
         // write custom name

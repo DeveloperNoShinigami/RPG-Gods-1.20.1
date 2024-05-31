@@ -7,107 +7,98 @@
 package rpggods.data.deity;
 
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.nbt.Tag;
 import net.minecraft.nbt.TagParser;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.registries.ForgeRegistries;
 import rpggods.RPGGods;
+import rpggods.util.RGCodecUtils;
 
+import javax.annotation.concurrent.Immutable;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
 
+@Immutable
 public class Offering {
-    public static final Offering EMPTY = new Offering(ItemStack.EMPTY, Optional.empty(), 0, 0, 0, 0,
-            Optional.empty(), Optional.empty(), 0, 0, Optional.empty(), Optional.empty());
-
-    // Codec that accepts Item or ItemStack
-    public static final Codec<ItemStack> ITEM_OR_STACK_CODEC = Codec.either(ForgeRegistries.ITEMS.getCodec(), ItemStack.CODEC)
-            .xmap(either -> either.map(ItemStack::new, Function.identity()),
-                    stack -> stack.getCount() == 1 && !stack.hasTag()
-                            ? Either.left(stack.getItem())
-                            : Either.right(stack));
-
+    
+    public static final String TAG_NBT = "nbt";
+    
     public static final Codec<Offering> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            ITEM_OR_STACK_CODEC.optionalFieldOf("item", ItemStack.EMPTY).forGetter(Offering::getAccept),
-            Codec.STRING.optionalFieldOf("item_tag").forGetter(Offering::getAcceptTagString),
+            RGCodecUtils.ITEM_OR_STACK_CODEC.optionalFieldOf("item", ItemStack.EMPTY).forGetter(Offering::getOffering),
             Codec.INT.optionalFieldOf("favor", 0).forGetter(Offering::getFavor),
             Codec.INT.optionalFieldOf("maxuses", 16).forGetter(Offering::getMaxUses),
             Codec.INT.optionalFieldOf("restocks", -1).forGetter(Offering::getRestocks),
             Codec.INT.optionalFieldOf("cooldown", 12000).forGetter(Offering::getCooldown),
-            ITEM_OR_STACK_CODEC.optionalFieldOf("trade").forGetter(Offering::getTrade),
-            Codec.STRING.optionalFieldOf("trade_tag").forGetter(Offering::getTradeTagString),
-            Codec.INT.optionalFieldOf("minlevel", Integer.MIN_VALUE).forGetter(Offering::getTradeMinLevel),
-            Codec.INT.optionalFieldOf("maxlevel", Integer.MAX_VALUE).forGetter(Offering::getTradeMaxLevel),
+            RGCodecUtils.ITEM_OR_STACK_CODEC.optionalFieldOf("trade").forGetter(Offering::getResult),
+            Codec.INT.optionalFieldOf("minlevel", Integer.MIN_VALUE).forGetter(Offering::getMinLevel),
+            Codec.INT.optionalFieldOf("maxlevel", Integer.MAX_VALUE).forGetter(Offering::getMaxLevel),
             ResourceLocation.CODEC.optionalFieldOf("function").forGetter(Offering::getFunction),
-            Codec.STRING.optionalFieldOf("function_text").forGetter(Offering::getFunctionText)
+            Codec.STRING.optionalFieldOf("function_text").forGetter(Offering::getFunctionTranslationKey)
     ).apply(instance, Offering::new));
 
     // TODO use Ingredient instead of a single ItemStack
-    private final ItemStack accept;
-    private final Optional<String> acceptTagString;
-    private final Optional<CompoundTag> acceptTag;
+    private final ItemStack offering;
     private final int favor;
-    private final Optional<ItemStack> trade;
-    private final Optional<String> tradeTagString;
-    private final Optional<CompoundTag> tradeTag;
+    private final Optional<ItemStack> result;
     private final int minLevel;
     private final int maxLevel;
     private final Optional<ResourceLocation> function;
-    private final Optional<String> functionText;
+    private final Optional<String> functionTranslationKey;
     private final int maxUses;
     private final int restocks;
     private final int cooldown;
 
-    public Offering(ItemStack accept, Optional<String> acceptTagString, int favor, int maxUses,
-                    int restocks, int cooldown, Optional<ItemStack> trade, Optional<String> tradeTagString,
+    public Offering(ItemStack offering, int favor, int maxUses,
+                    int restocks, int cooldown, Optional<ItemStack> result,
                     int tradeMinLevel, int tradeMaxLevel,
-                    Optional<ResourceLocation> function, Optional<String> functionText) {
-        this.accept = accept;
-        this.acceptTagString = acceptTagString;
+                    Optional<ResourceLocation> function, Optional<String> functionTranslationKey) {
+        this.offering = withNbtStringAsTag(offering);
         this.favor = favor;
         this.restocks = restocks;
         this.maxUses = maxUses;
         this.cooldown = cooldown;
-        this.trade = trade;
-        this.tradeTagString = tradeTagString;
+        this.result = result.map(Offering::withNbtStringAsTag);
         this.minLevel = Math.min(tradeMinLevel, tradeMaxLevel);
         this.maxLevel = Math.max(tradeMinLevel, tradeMaxLevel);
         this.function = function;
-        this.functionText = functionText;
-        // parse accept tag
-        Optional<CompoundTag> temp = Optional.empty();
-        if (acceptTagString.isPresent()) {
-            try {
-                temp = Optional.of(TagParser.parseTag(acceptTagString.get()));
-                this.accept.setTag(temp.get());
-            } catch (CommandSyntaxException e) {
-                RPGGods.LOGGER.error("Failed to parse item NBT in Offering\n" + e.getMessage());
-            }
-        }
-        this.acceptTag = temp;
-        // parse trade tag
-        temp = Optional.empty();
-        if (this.trade.isPresent() && tradeTagString.isPresent()) {
-            try {
-                temp = Optional.of(TagParser.parseTag(tradeTagString.get()));
-                this.trade.get().setTag(temp.get());
-            } catch (CommandSyntaxException e) {
-                RPGGods.LOGGER.error("Failed to parse trade NBT in Offering\n" + e.getMessage());
-            }
-        }
-        this.tradeTag = temp;
+        this.functionTranslationKey = functionTranslationKey;
     }
 
     //// HELPER METHODS ////
+
+    /**
+     * Attempts to parse a {@link CompoundTag} from a String stored in the {@link ItemStack} 
+     * and merges the tag back into the {@link ItemStack}
+     * @param itemStack the item stack to modify
+     * @return true if the item stack was modified
+     * @see CompoundTag#merge(CompoundTag) 
+     * @see TagParser#parseTag(String) 
+     */
+    private static ItemStack withNbtStringAsTag(final ItemStack itemStack) {
+        // validate tag exists
+        if(!itemStack.hasTag() || !itemStack.getTag().contains(TAG_NBT, Tag.TAG_STRING)) {
+            return itemStack;
+        }
+        // parse tag from the string
+        try {
+            String nbtString = itemStack.getTag().getString(TAG_NBT);
+            CompoundTag tag = TagParser.parseTag(nbtString);
+            // merge with existing tag, if any
+            tag = itemStack.getOrCreateTag().merge(tag);
+            // remove string
+            tag.remove(TAG_NBT);
+            // update itemstack
+            itemStack.setTag(tag);
+        } catch (CommandSyntaxException e) {
+            RPGGods.LOGGER.error("[Offering] Failed to parse NBT from String:\n" + e.getMessage());
+        }
+        return itemStack;
+    }
 
     /**
      * @param entry the registry entry
@@ -117,7 +108,7 @@ public class Offering {
     public static boolean isFor(final Map.Entry<ResourceKey<Offering>, Offering> entry, final ResourceLocation deityId) {
         // validate offering data
         final Offering offering = entry.getValue();
-        if (offering.getFavor() == 0 && offering.getFunction().isEmpty() && offering.getTrade().isEmpty()) {
+        if (offering.getFavor() == 0 && offering.getFunction().isEmpty() && offering.getResult().isEmpty()) {
             return false;
         }
         // validate resource location
@@ -130,22 +121,6 @@ public class Offering {
     }
 
     /**
-     * Attempts to parse the deity from the given offering id
-     *
-     * @param offeringId the offering id in the form {@code namespace:deity/offering}
-     * @return the resource location if found, otherwise {@link DeityContainer#EMPTY}
-     */
-    @Deprecated
-    public static ResourceLocation getDeity(final ResourceLocation offeringId) {
-        String path = offeringId.getPath();
-        int index = path.indexOf("/");
-        if (index > -1) {
-            return new ResourceLocation(offeringId.getNamespace(), path.substring(0, index));
-        }
-        return DeityContainer.EMPTY.id;
-    }
-
-    /**
      * Checks the given item stack to see if this offering can accept it.
      * Examines item, count, and enchantments
      *
@@ -154,32 +129,32 @@ public class Offering {
      */
     public boolean matches(ItemStack offering) {
         // check item and stack size
-        if (!ItemStack.isSameItem(this.accept, offering) || offering.getCount() < this.accept.getCount()) {
+        if (!ItemStack.isSameItem(this.offering, offering) || offering.getCount() < this.offering.getCount()) {
             return false;
         }
-        // check tag
-        if (this.acceptTag.isPresent() && !NbtUtils.compareNbt(this.acceptTag.get(), offering.getTag(), true)) {
+        // check tag only when offering has a tag
+        if (this.offering.hasTag() && !this.offering.getTag().isEmpty() && !NbtUtils.compareNbt(this.offering.getTag(), offering.getTag(), true)) {
             return false;
         }
-
         return true;
     }
 
     /**
-     * ItemStack aware version of {@link #getTrade()} that allows
+     * ItemStack aware version of {@link #getResult()} that allows
      * the trade item to copy NBT data and enchantments from the offering item.
      *
      * @param offering the offering item
      * @return the trade item (or empty if there is no trade)
      */
-    public Optional<ItemStack> getTrade(final ItemStack offering) {
-        // special handling of trade when same item and NBT is present
-        if (trade.isPresent() && ItemStack.isSameItem(offering, trade.get()) && tradeTag.isPresent()) {
+    public Optional<ItemStack> getResult(final ItemStack offering) {
+        final Optional<ItemStack> oResult = getResult();
+        // special handling of trade when same item and NBT is present in the result
+        if (oResult.isPresent() && oResult.get().hasTag() && ItemStack.isSameItem(offering, oResult.get())) {
             // create copy of offering item with correct count
             ItemStack tradeItem = offering.copy();
-            tradeItem.setCount(trade.get().getCount());
+            tradeItem.setCount(oResult.get().getCount());
             // merge tags
-            CompoundTag tradeItemTag = merge(tradeTag.get(), tradeItem.getOrCreateTag(), 0);
+            CompoundTag tradeItemTag = tradeItem.getOrCreateTag().merge(oResult.get().getTag());
             tradeItem.setTag(tradeItemTag);
             // merge damage
             if (offering.isDamageableItem() && offering.isDamaged()) {
@@ -187,79 +162,13 @@ public class Offering {
             }
             return Optional.of(tradeItem);
         }
-        // copy trade item
-        if (getTrade().isPresent()) {
-            return Optional.of(getTrade().get().copy());
-        }
-        // no trade item
-        return Optional.empty();
-    }
-
-    /**
-     * Checks all of the values in main and merges them with the values in rec
-     *
-     * @param main  the CompoundNBT that serves as a template
-     * @param rec   the CompoundNBT that will be modified
-     * @param depth start at 0
-     * @return the modified CompoundNBT
-     */
-    public static CompoundTag merge(CompoundTag main, CompoundTag rec, int depth) {
-        // prevent tags that are too deep
-        if (depth >= 512) {
-            return rec;
-        }
-        // iterate over all values in main tag
-        for (String key : main.getAllKeys()) {
-            Tag mnbt = main.get(key);
-            // merge the tag value with the value in the other list
-            if (mnbt instanceof CompoundTag) {
-                CompoundTag merged = merge((CompoundTag) mnbt, rec.getCompound(key), depth + 1);
-                rec.put(key, merged);
-            } else if (mnbt instanceof ListTag) {
-                ListTag mList = (ListTag) mnbt;
-                ListTag rList = rec.getList(key, mList.getElementType());
-                ListTag merged = merge(mList, rList);
-                rec.put(key, merged);
-            } else {
-                rec.put(key, mnbt.copy());
-            }
-        }
-        return rec;
-    }
-
-    public static ListTag merge(ListTag main, ListTag rec) {
-        // iterate through all items in list
-        for (int m = 0, ml = main.size(); m < ml; m++) {
-            Tag mItem = main.get(m);
-            boolean hasItem = false;
-            // attempt to locate the same item in the other list
-            for (int r = 0, rl = rec.size(); r < rl; r++) {
-                Tag rItem = rec.get(r);
-                if (NbtUtils.compareNbt(mItem, rItem, true)) {
-                    hasItem = true;
-                    break;
-                }
-            }
-            // add the item to the other list
-            if (!hasItem) {
-                rec.add(mItem);
-            }
-        }
-        return rec;
+        return oResult;
     }
 
     //// GETTERS ////
 
-    public ItemStack getAccept() {
-        return accept;
-    }
-
-    public Optional<String> getAcceptTagString() {
-        return acceptTagString;
-    }
-
-    public Optional<CompoundTag> getAcceptTag() {
-        return acceptTag;
+    public ItemStack getOffering() {
+        return offering;
     }
 
     public int getFavor() {
@@ -278,23 +187,19 @@ public class Offering {
         return cooldown;
     }
 
-    public Optional<ItemStack> getTrade() {
-        return trade;
+    /**
+     * @return a copy of the result item stack, if any
+     * @see #getResult(ItemStack)
+     */
+    public Optional<ItemStack> getResult() {
+        return result.map(ItemStack::copy);
     }
 
-    public Optional<String> getTradeTagString() {
-        return tradeTagString;
-    }
-
-    public Optional<CompoundTag> getTradeTag() {
-        return tradeTag;
-    }
-
-    public int getTradeMinLevel() {
+    public int getMinLevel() {
         return minLevel;
     }
 
-    public int getTradeMaxLevel() {
+    public int getMaxLevel() {
         return maxLevel;
     }
 
@@ -302,8 +207,8 @@ public class Offering {
         return function;
     }
 
-    public Optional<String> getFunctionText() {
-        return functionText;
+    public Optional<String> getFunctionTranslationKey() {
+        return functionTranslationKey;
     }
 
     public Cooldown createCooldown() {

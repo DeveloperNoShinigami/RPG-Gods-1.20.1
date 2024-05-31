@@ -6,7 +6,6 @@
 
 package rpggods.data.perk.action;
 
-import com.google.common.collect.ImmutableList;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.RegistryAccess;
@@ -79,8 +78,8 @@ public class PotionAction extends PerkAction {
     }
 
     @Override
-    public List<Component> createDescription(RegistryAccess registryAccess) {
-        return ImmutableList.of(mobEffectProvider.createDescription());
+    public Component createDescription(RegistryAccess registryAccess) {
+        return Component.translatable(PREFIX + "potion" + SUFFIX, mobEffectProvider.createDescription());
     }
 
     @Override
