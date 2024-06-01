@@ -10,6 +10,7 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.RandomSource;
 import net.minecraft.util.valueproviders.IntProvider;
 import rpggods.RGRegistry;
 
@@ -30,6 +31,10 @@ public class CropYieldAction extends PerkAction {
     public boolean apply(PerkActionContext context) {
         // the crop yield perk action is handled by the global loot modifier
         return true;
+    }
+
+    public int getBonusYield(final RandomSource random) {
+        return this.amount.sample(random);
     }
 
     @Override

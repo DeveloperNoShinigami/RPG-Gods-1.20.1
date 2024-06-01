@@ -8,9 +8,11 @@ package rpggods.data.perk;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import rpggods.RGRegistry;
+import rpggods.data.deity.Deity;
 import rpggods.data.favor.FavorLevel;
 import rpggods.data.favor.FavorRange;
 import rpggods.data.perk.action.PerkAction;
@@ -145,6 +147,10 @@ public final class Perk {
 
     public ResourceLocation getDeity() {
         return getRange().getDeity();
+    }
+
+    public Deity getDeity(final RegistryAccess registryAccess) {
+        return Deity.getRegistry(registryAccess).get(getDeity());
     }
 
     @Override

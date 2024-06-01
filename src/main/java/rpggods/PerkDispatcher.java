@@ -12,6 +12,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandFunction;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.Vec3i;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
@@ -35,6 +36,7 @@ import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.eventbus.api.Event;
 import net.minecraftforge.registries.ForgeRegistries;
 import rpggods.data.deity.Cooldown;
+import rpggods.data.deity.Deity;
 import rpggods.data.deity.DeityContainer;
 import rpggods.data.deity.Offering;
 import rpggods.data.deity.Sacrifice;
@@ -325,146 +327,6 @@ public final class PerkDispatcher {
     }
 
     /**
-     * Loads all perks that match the given {@link PerkCondition} {@link Codec} and
-     * attempts to run them.
-     *
-     * @param type   The Perk Condition Type to run
-     * @param player The player
-     * @param favor  The player's favor
-     * @param entity An entity associated with this condition, if any
-     * @param data   A ResourceLocation associated with this condition, if any
-     * @param object An event associated with this condition, if any
-     * @return true if at least one perk ran successfully
-     * @see RGRegistry.PerkConditionReg
-     */
-    @Deprecated
-    public static boolean triggerCondition(final Codec<? extends PerkCondition> type, final Player player, final IFavor favor,
-                                           final Optional<Entity> entity, final Optional<ResourceLocation> data,
-                                           final Optional<? extends Event> object) {
-        boolean success = false;
-        if (favor.isEnabled()) {
-            // use a map to avoid duplicates
-            Map<ResourceLocation, Perk> perks = new HashMap<>();
-            // iterate all containers and add matching perks to the map
-            for (DeityContainer container : DeityContainer.getRegistry(player.level().isClientSide()).values()) {
-                // validate deity
-                boolean deityEnabled = container.getDeity().isEnabled() && favor.getFavor(container.getId()).isEnabled();
-                if (!deityEnabled) {
-                    continue;
-                }
-                // add matching perks
-                perks.putAll(container.getPerksByCondition(type));
-            }
-            // shuffle perks
-            List<Perk> shuffledPerks = new ArrayList<>(perks.values());
-            Collections.shuffle(shuffledPerks);
-            // run each perk
-            for (Perk perk : shuffledPerks) {
-                success |= runPerk(perk, player, favor, entity, data, object);
-            }
-        }
-        return success;
-    }
-
-    /**
-     * Loads all perks with the given {@link PerkAction} {@link Codec} and attempts to run each one.
-     *
-     * @param type   the action type (eg, function, item, potion, summon, arrow, xp)
-     * @param player the player
-     * @param favor  the player's favor
-     * @param entity an entity to use when running the perk, if any
-     * @return True if at least one perk ran successfully
-     * @see RGRegistry.PerkActionReg
-     */
-    @Deprecated
-    public static boolean triggerPerks(final Codec<? extends PerkAction> type, final Player player, final IFavor favor, final Optional<Entity> entity) {
-        return triggerPerks(type, player, favor, entity, Optional.empty(), Optional.empty());
-    }
-
-    /**
-     * Loads all perks with the given {@link PerkAction.Type} and attempts to run each one.
-     *
-     * @param type   the action type (eg, function, item, potion, summon, arrow, xp)
-     * @param player the player
-     * @param favor  the player's favor
-     * @param data   a ResourceLocation ID to use when running the perk, if any
-     * @param entity an entity to use when running the perk, if any
-     * @param itemStack an item stack to use when running the perk, if any
-     * @param blockState a blockstate to use when running the perk, if any
-     * @param event the Event to reference when running the perk, if any
-     * @return True if at least one perk ran successfully
-     */
-    @Deprecated
-    public static boolean triggerPerks(final Codec<? extends PerkAction> type, final Player player, final IFavor favor,
-                                       final Optional<ResourceLocation> data, final Optional<Entity> entity,
-                                       final Optional<ItemStack> itemStack, final Optional<BlockState> blockState,
-                                       final Optional<? extends Event> event) {
-        boolean success = false;
-        if (favor.isEnabled()) {
-            // use a map to avoid duplicates
-            Map<ResourceLocation, Perk> perks = new HashMap<>();
-            // iterate all containers and add matching perks to the map
-            for (DeityContainer container : DeityContainer.getRegistry(player.level().isClientSide()).values()) {
-                // validate deity
-                boolean deityEnabled = container.getDeity().isEnabled() && favor.getFavor(container.getId()).isEnabled();
-                if (!deityEnabled) {
-                    continue;
-                }
-                // add matching perks
-                perks.putAll(container.getPerksByAction(type));
-            }
-            // shuffle perks
-            final List<Perk> shuffledPerks = new ArrayList<>(perks.values());
-            Collections.shuffle(shuffledPerks);
-            // run each perk
-            for (Perk perk : shuffledPerks) {
-                success |= runPerk(perk, player, favor, entity, data, object);
-            }
-        }
-        return success;
-    }
-
-    /**
-     * Loads and runs a single function at the entity position
-     *
-     * @param level      the world
-     * @param entity     the entity (for example, a player)
-     * @param functionId the function ID of a function to run
-     * @return true if the function ran successfully
-     */
-    public static boolean runFunction(final Level level, final LivingEntity entity, ResourceLocation functionId) {
-        final MinecraftServer server = level.getServer();
-        if (server != null) {
-            final ServerFunctionManager manager = server.getFunctions();
-            final Optional<CommandFunction> function = manager.get(functionId);
-            if (function.isPresent()) {
-                final CommandSourceStack commandSource = manager.getGameLoopSender()
-                        .withEntity(entity)
-                        .withPosition(entity.position())
-                        .withPermission(4)
-                        .withSuppressedOutput();
-                manager.execute(function.get(), commandSource);
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Attempts to run a single perk with minimal context and sets a cooldown if successful.
-     * Checks favor range, cooldown, random chance, and conditions before running the perk.
-     *
-     * @param perk   the Perk to run
-     * @param player the player to affect
-     * @param favor  the player's favor
-     * @return True if the perk was run and cooldown was added.
-     * @see #runPerk(Perk, ServerPlayer, IFavor, Optional, Optional, Optional, Optional, Optional)
-     */
-    public static boolean runPerk(final Perk perk, final ServerPlayer player, final IFavor favor) {
-        return runPerk(perk, player, favor, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
-    }
-
-    /**
      * Attempts to run a single perk and sets a cooldown if successful.
      * Checks favor range, cooldown, random chance, and conditions before running the perk.
      *
@@ -477,6 +339,7 @@ public final class PerkDispatcher {
      * @param blockState a blockstate to use when running the perk, if any
      * @param event the Event to reference when running the perk, if any
      * @return True if the perk was run and cooldown was added.
+     * @see #invoke(ServerPlayer, IFavor)
      */
     public static boolean runPerk(final Perk perk, final ServerPlayer player, final IFavor favor,
                                   final Optional<ResourceLocation> data, final Optional<Entity> entity,
@@ -509,7 +372,8 @@ public final class PerkDispatcher {
         // verify at least one action was successful
         if(success) {
             // send feedback
-            sendPerkFeedback(perk.getDeity(), player, favor, perk.isPositive());
+            final Deity deity = Deity.getRegistry(player.level().registryAccess()).get(perk.getDeity());
+            sendPerkFeedback(deity, player, favor, perk.isPositive());
             // update cooldown
             long cooldown = (long) Math.floor(perk.getCooldown() * (1.0D + player.getRandom().nextDouble() * 0.25D));
             favor.setPerkCooldown(perk.getCategory(), cooldown);
@@ -517,18 +381,32 @@ public final class PerkDispatcher {
         return success;
     }
 
-    public static void sendPerkFeedback(ResourceLocation deity, Player player, IFavor favor, boolean isPositive) {
-        if (RPGGods.CONFIG.canGiveFeedback()) {
-            final Component deityName = DeityContainer.createName(deity);
-            final Component message;
-            if (isPositive) {
-                message = Component.translatable("favor.perk.feedback.positive", deityName).withStyle(ChatFormatting.GREEN);
-            } else {
-                message = Component.translatable("favor.perk.feedback.negative", deityName).withStyle(ChatFormatting.RED);
+    /**
+     * Loads and runs a single function at the entity position
+     *
+     * @param level      the world
+     * @param entity     the entity (for example, a player)
+     * @param functionId the function ID of a function to run
+     * @return true if the function ran successfully
+     */
+    public static boolean runFunction(final Level level, final LivingEntity entity, ResourceLocation functionId) {
+        final MinecraftServer server = level.getServer();
+        if (server != null) {
+            final ServerFunctionManager manager = server.getFunctions();
+            final Optional<CommandFunction> function = manager.get(functionId);
+            if (function.isPresent()) {
+                final CommandSourceStack commandSource = manager.getGameLoopSender()
+                        .withEntity(entity)
+                        .withPosition(entity.position())
+                        .withPermission(4)
+                        .withSuppressedOutput();
+                manager.execute(function.get(), commandSource);
+                return true;
             }
-            player.displayClientMessage(message, !RPGGods.CONFIG.isFeedbackChat());
         }
+        return false;
     }
+
 
     /**
      * @param altar   the altar entity
@@ -536,11 +414,16 @@ public final class PerkDispatcher {
      * @return true if a ritual was detected and patron was changed
      */
     public static boolean performRitual(final AltarEntity altar, final ResourceLocation deityId) {
+        // validate server
+        if(null == altar.getServer()) {
+            return false;
+        }
+        // load all entities in the altar detection aabb
         Vec3i facing = altar.getDirection().getNormal();
         BlockPos pos = altar.blockPosition().offset(facing);
-        AABB aabb = new AABB(pos).inflate(0.15D, 1.0D, 0.15D);
+        AABB aabb = new AABB(pos).inflate(0.15D, 1.075D, 0.15D);
         List<ItemEntity> list = altar.level().getEntitiesOfClass(ItemEntity.class, aabb, e -> e.isOnFire());
-        // detect first burning item in list
+        // validate there is at least one burning item
         if (list.isEmpty()) {
             return false;
         }
@@ -549,49 +432,54 @@ public final class PerkDispatcher {
         if (null == item.getOwner()) {
             return false;
         }
-        Player player = altar.level().getPlayerByUUID(item.getOwner().getUUID());
+        // validate player
+        final ServerPlayer player = altar.getServer().getPlayerList().getPlayer(item.getOwner().getUUID());
         if (null == player) {
             return false;
         }
-        // detect ritual perks for this deity
-        ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(item.getItem().getItem());
-        if (null == itemId) {
+        // load and validate favor
+        final IFavor favor = RPGGods.getFavor(player).orElse(null);
+        if(null == favor || !favor.isEnabled()) {
             return false;
         }
-        DeityContainer deity = RPGGods.DEITY_HELPER.computeIfAbsent(deityId, DeityContainer::new);
-        List<ResourceLocation> perkIds = deity.perkByConditionMap
-                .getOrDefault(PerkCondition.Type.RITUAL, ImmutableList.of());
-        // create list using perk IDs
-        List<Perk> perks = new ArrayList<>();
-        for (ResourceLocation perkId : perkIds) {
-            perks.add(RPGGods.PERK_MAP.getOrDefault(perkId, Perk.EMPTY));
-        }
-        // load favor
+        // load deity container
+        final RegistryAccess registryAccess = altar.level().registryAccess();
+        final DeityContainer deity = DeityContainer.getOrCreate(registryAccess, deityId);
+        // load ritual perks
+        final Map<ResourceLocation, Perk> ritualPerks = deity.getPerksByCondition(RGRegistry.PerkConditionReg.RITUAL.get());
+        // attempt to run all perks
         boolean success = false;
-        LazyOptional<IFavor> ifavor = RPGGods.getFavor(player);
-        if (ifavor.isPresent()) {
-            IFavor favor = ifavor.orElse(Favor.EMPTY);
-            // attempt to run the perks
-            if (favor.isEnabled()) {
-                for (Perk perk : perks) {
-                    success |= runPerk(perk, player, favor, Optional.of(altar), Optional.of(itemId), Optional.empty());
-                }
-            }
-            // send feedback
-            if (success && favor.getPatron().isPresent()) {
-                // summon visual lightning bolt
-                LightningBolt bolt = EntityType.LIGHTNING_BOLT.create(altar.level());
-                bolt.setVisualOnly(true);
-                Vec3 position = Vec3.atBottomCenterOf(pos.below());
-                bolt.setPos(position.x, position.y, position.z);
-                altar.level().addFreshEntity(bolt);
-                // send message
-                Component message = Component.translatable("favor.perk.type.patron.description.add", DeityContainer.createName(favor.getPatron().get()))
-                        .withStyle(ChatFormatting.LIGHT_PURPLE, ChatFormatting.BOLD);
-                player.displayClientMessage(message, true);
-            }
+        for(Perk perk : ritualPerks.values()) {
+            success |= runPerk(perk, player, favor, Optional.empty(), Optional.of(altar), Optional.of(item.getItem()), Optional.empty(), Optional.empty());
         }
-
+        // send feedback when ritual resulted in a patron being assigned
+        if(success && favor.getPatron().isPresent()) {
+            // summon visual lightning bolt
+            LightningBolt bolt = EntityType.LIGHTNING_BOLT.create(altar.level());
+            bolt.setVisualOnly(true);
+            Vec3 position = Vec3.atBottomCenterOf(pos.below());
+            bolt.setPos(position.x, position.y, position.z);
+            altar.level().addFreshEntity(bolt);
+            // send message
+            final Deity patron = Deity.getRegistry(registryAccess).get(favor.getPatron().get());
+            final Component patronName = patron.getName();
+            Component message = Component.translatable("favor.perk.type.patron.description.add", patronName)
+                    .withStyle(ChatFormatting.LIGHT_PURPLE, ChatFormatting.BOLD);
+            player.displayClientMessage(message, true);
+        }
         return success;
+    }
+
+    public static void sendPerkFeedback(Deity deity, Player player, IFavor favor, boolean isPositive) {
+        if (RPGGods.CONFIG.canGiveFeedback()) {
+            final Component deityName = deity.getName();
+            final Component message;
+            if (isPositive) {
+                message = Component.translatable("favor.perk.feedback.positive", deityName).withStyle(ChatFormatting.GREEN);
+            } else {
+                message = Component.translatable("favor.perk.feedback.negative", deityName).withStyle(ChatFormatting.RED);
+            }
+            player.displayClientMessage(message, !RPGGods.CONFIG.isFeedbackChat());
+        }
     }
 }

@@ -100,8 +100,8 @@ import rpggods.item.ScrollItem;
 import rpggods.menu.AltarContainerMenu;
 import rpggods.menu.FavorContainerMenu;
 import rpggods.util.AltarStructureProcessor;
-import rpggods.util.AutosmeltOrCobbleModifier;
-import rpggods.util.CropMultiplierModifier;
+import rpggods.util.AutosmeltAndUnsmeltLootModifier;
+import rpggods.util.CropYieldLootModifier;
 import rpggods.util.ShapedAltarRecipe;
 import rpggods.util.ShapelessAltarRecipe;
 
@@ -280,10 +280,10 @@ public final class RGRegistry {
             LOOT_MODIFIER_SERIALIZERS.register(FMLJavaModLoadingContext.get().getModEventBus());
         }
 
-        public static final RegistryObject<Codec<? extends AutosmeltOrCobbleModifier>> AUTOSMELT_LOOT_MODIFIER =
-                LOOT_MODIFIER_SERIALIZERS.register("autosmelt_or_cobble", AutosmeltOrCobbleModifier.CODEC_SUPPLIER);
-        public static final RegistryObject<Codec<? extends CropMultiplierModifier>> CROP_LOOT_MODIFIER =
-                LOOT_MODIFIER_SERIALIZERS.register("crop_multiplier", CropMultiplierModifier.CODEC_SUPPLIER);
+        public static final RegistryObject<Codec<? extends AutosmeltAndUnsmeltLootModifier>> AUTOSMELT_OR_UNSMELT_LOOT_MODIFIER =
+                LOOT_MODIFIER_SERIALIZERS.register("autosmelt_and_unsmelt", AutosmeltAndUnsmeltLootModifier.CODEC_SUPPLIER);
+        public static final RegistryObject<Codec<? extends CropYieldLootModifier>> CROP_YIELD_LOOT_MODIFIER =
+                LOOT_MODIFIER_SERIALIZERS.register("crop_yield", CropYieldLootModifier.CODEC_SUPPLIER);
     }
 
     public static final class CapabilityReg {

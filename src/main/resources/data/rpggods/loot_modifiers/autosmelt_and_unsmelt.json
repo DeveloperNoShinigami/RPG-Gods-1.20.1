@@ -1,5 +1,5 @@
 {
-  "type": "rpggods:autosmelt_or_cobble",
+  "type": "rpggods:autosmelt_and_unsmelt",
   "conditions": [
     {
       "condition": "minecraft:entity_properties",
@@ -24,8 +24,19 @@
           ]
         }
       }
+    },
+    {
+      "condition": "minecraft:location_check",
+      "predicate": {
+        "block": {
+          "tag": "forge:ores"
+        }
+      }
     }
   ],
-  "stone": "minecraft:cobblestone",
-  "ores": "forge:ores"
+  "ore_to_stone": {
+    "forge:ores_in_ground/deepslate": "minecraft:cobbled_deepslate",
+    "forge:ores_in_ground/stone": "minecraft:cobblestone",
+    "forge:ores_in_ground/netherrack": "minecraft:netherrack"
+  }
 }
