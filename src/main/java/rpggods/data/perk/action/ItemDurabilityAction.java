@@ -14,6 +14,7 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import rpggods.RGRegistry;
+import rpggods.util.ComponentUtils;
 import rpggods.util.RGCodecUtils;
 
 import java.util.List;
@@ -63,7 +64,7 @@ public class ItemDurabilityAction extends PerkAction {
     @Override
     public Component createDescription(RegistryAccess registryAccess) {
         // TODO add slot(s) to item durability action description
-        final Component percentage = createPercentageComponent(percent);
+        final Component percentage = ComponentUtils.createPercentageComponent(percent);
         return Component.translatable(PREFIX + "durability" + SUFFIX, percentage);
     }
 

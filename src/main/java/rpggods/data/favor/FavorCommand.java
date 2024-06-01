@@ -17,6 +17,7 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.commands.arguments.ResourceLocationArgument;
+import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
@@ -144,7 +145,7 @@ public class FavorCommand {
                 }
                 // add always unlocked
                 if(deity.isUnlocked()) {
-                    builder.getSiblings().add(Component.literal(" "));
+                    builder.getSiblings().add(CommonComponents.SPACE);
                     builder.getSiblings().add(Component.translatable(commandKey + ".always_unlocked").withStyle(ChatFormatting.YELLOW));
                 }
             });

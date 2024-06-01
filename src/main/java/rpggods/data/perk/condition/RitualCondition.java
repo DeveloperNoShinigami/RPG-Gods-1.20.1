@@ -6,7 +6,6 @@
 
 package rpggods.data.perk.condition;
 
-import com.google.common.collect.ImmutableList;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.advancements.critereon.ItemPredicate;
@@ -14,6 +13,7 @@ import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import rpggods.RGRegistry;
+import rpggods.util.ComponentUtils;
 import rpggods.util.RGCodecUtils;
 
 import javax.annotation.concurrent.Immutable;
@@ -54,8 +54,8 @@ public class RitualCondition extends PerkCondition {
 
     @Override
     public Component createDescription(final RegistryAccess registryAccess) {
-        // TODO ritual condition description
-        return ImmutableList.of();
+        final Component itemPredicateComponent = ComponentUtils.createItemPredicateDescription(registryAccess, itemPredicate);
+        return Component.translatable(PREFIX + "ritual", itemPredicateComponent);
     }
 
     @Override

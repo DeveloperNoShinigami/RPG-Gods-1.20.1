@@ -6,17 +6,18 @@
 
 package rpggods.data.perk.condition;
 
-import com.google.common.collect.ImmutableList;
 import com.mojang.serialization.Codec;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import rpggods.RGRegistry;
-import rpggods.data.deity.Altar;
 import rpggods.data.deity.Deity;
+import rpggods.data.deity.DeityContainer;
 
+import javax.annotation.concurrent.Immutable;
 import java.util.Optional;
 
+@Immutable
 public class PatronCondition extends PerkCondition {
 
     public static final Codec<PatronCondition> CODEC = ResourceLocation.CODEC
@@ -50,7 +51,8 @@ public class PatronCondition extends PerkCondition {
 
     @Override
     public Component createDescription(RegistryAccess registryAccess) {
-        return ImmutableList.of(Component.translatable(Altar.createTranslationKey(deity)));
+        final DeityContainer container = DeityContainer.getOrCreate(registryAccess, deity);
+        return Component.translatable(PREFIX + "patron", container.getName());
     }
 
     @Override

@@ -6,7 +6,6 @@
 
 package rpggods.data.perk.condition;
 
-import com.google.common.collect.ImmutableList;
 import com.mojang.serialization.Codec;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.chat.Component;
@@ -35,7 +34,7 @@ public class RandomTickCondition extends PerkCondition {
 
     @Override
     public Component createDescription(final RegistryAccess registryAccess) {
-        return ImmutableList.of(Component.translatable("rpggods.perk_condition.random_tick"));
+        return Component.translatable(PREFIX + "random_tick");
     }
 
     @Override

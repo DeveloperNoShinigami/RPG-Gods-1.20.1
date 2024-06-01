@@ -6,7 +6,6 @@
 
 package rpggods.data.perk.condition;
 
-import com.google.common.collect.ImmutableList;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.advancements.critereon.MinMaxBounds;
@@ -18,13 +17,17 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.phys.AABB;
 import rpggods.RGRegistry;
 import rpggods.data.deity.Altar;
+import rpggods.data.deity.DeityContainer;
 import rpggods.entity.AltarEntity;
+import rpggods.util.ComponentUtils;
 import rpggods.util.DeferredHolderSet;
 import rpggods.util.RGCodecUtils;
 
+import javax.annotation.concurrent.Immutable;
 import java.util.List;
 import java.util.Optional;
 
+@Immutable
 public class NearAltarCondition extends PerkCondition {
 
     private static final int MAX_DISTANCE = 64;
@@ -79,8 +82,24 @@ public class NearAltarCondition extends PerkCondition {
 
     @Override
     public Component createDescription(RegistryAccess registryAccess) {
-        // TODO near altar condition description
-        return ImmutableList.of();
+        // load registry
+        final Registry<Altar> altarRegistry = registryAccess.registryOrThrow(RGRegistry.Keys.ALTARS);
+        // load holder set
+        final HolderSet<Altar> holderSet = altar.get(altarRegistry);
+        // create list of altar components
+        final List<Component> altarComponentList = ComponentUtils.createHolderSetDescription(altarRegistry, holderSet, altar -> {
+            if(altar.getDeity().isPresent()) {
+                return DeityContainer.getOrCreate(registryAccess, altar.getDeity().get()).getName();
+            }
+            if(altar.getName().isPresent()) {
+                return Component.literal(altar.getName().get());
+            }
+            return Component.empty();
+        });
+        // join altar components
+        final Component delimiter = Component.translatable("favor.perk.condition.or");
+        final Component altarComponent = ComponentUtils.join(altarComponentList, delimiter);
+        return Component.translatable(PREFIX + "near_altar", altarComponent);
     }
 
     @Override

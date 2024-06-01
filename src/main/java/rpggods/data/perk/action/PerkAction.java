@@ -10,53 +10,16 @@ import com.mojang.datafixers.Products;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.ChatFormatting;
 import net.minecraft.core.RegistryAccess;
-import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.ExtraCodecs;
 import net.minecraft.util.StringRepresentable;
-import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.entity.AgeableMob;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.ExperienceOrb;
-import net.minecraft.world.entity.item.ItemEntity;
-import net.minecraft.world.entity.npc.AbstractVillager;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.projectile.AbstractArrow;
-import net.minecraft.world.entity.projectile.Arrow;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.trading.Merchant;
-import net.minecraft.world.item.trading.MerchantOffer;
-import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.common.util.LazyOptional;
-import net.minecraftforge.event.entity.living.BabyEntitySpawnEvent;
-import net.minecraftforge.event.entity.living.LivingHurtEvent;
-import net.minecraftforge.eventbus.api.Event;
-import rpggods.RGEvents;
 import rpggods.RGRegistry;
-import rpggods.RPGGods;
-import rpggods.data.deity.Altar;
-import rpggods.data.deity.Deity;
-import rpggods.data.deity.DeityContainer;
-import rpggods.data.favor.FavorLevel;
-import rpggods.data.favor.IFavor;
-import rpggods.data.perk.AffinityType;
-import rpggods.data.perk.Perk;
-import rpggods.data.tameable.ITameable;
-import rpggods.util.FavorChangedEvent;
 import rpggods.util.RGCodecUtils;
 
-import javax.annotation.Nullable;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Function;
 
 public abstract class PerkAction {
@@ -139,57 +102,6 @@ public abstract class PerkAction {
      */
     protected static <T extends PerkAction> Products.P1<RecordCodecBuilder.Mu<T>, Boolean> codecStart(RecordCodecBuilder.Instance<T> instance) {
         return instance.group(Codec.BOOL.optionalFieldOf("hidden", false).forGetter(PerkAction::isHidden));
-    }
-
-    /**
-     * Formats the given float as a percentage. Example usage:
-     * {@code input: -0.9, output: -90%};
-     * {@code input: 0.25: output: +25%};
-     * {@code input: 1.2: output: +120%}
-     * @param percent a percent in the range {@code [-1.0, inf)}
-     * @return a text component containing a signed percentage
-     */
-    public static Component createPercentageComponent(final float percent) {
-        StringBuilder builder = new StringBuilder("");
-        // add prefix
-        if(!(percent < 0.0F)) {
-            builder.append("+");
-        }
-        // add number and percent
-        builder.append(
-                String.format("%.2f", percent * 100.0F)
-                .replace("0*$", "")
-                .replace("\\.$", ""));
-        builder.append("%");
-        // create component
-        return Component.literal(builder.toString());
-    }
-
-    /**
-     * @param min the minimum value, can be null to indicate no minimum
-     * @param max the maximum value, can be null to indicate no maximum
-     * @return a component describing the min and max bounds
-     */
-    public static Component createBoundsComponent(final @Nullable Integer min, final @Nullable Integer max) {
-        // TODO add min max bounds to lang file
-        if(min != null && max != null) {
-            // exact value
-            if(min.equals(max)) {
-                return Component.literal(min + "");
-            }
-            // between two defined values
-            return Component.translatable("perk.bounds.between", min + "", max + "");
-        }
-        // below some value
-        if(max != null) {
-            return Component.translatable("perk.bounds.at_most", max + "");
-        }
-        // above some value
-        if(min != null) {
-            return Component.translatable("perk.bounds.at_least", min + "");
-        }
-        // any value
-        return Component.translatable("perk.bounds.any");
     }
 
     //// GETTERS ////

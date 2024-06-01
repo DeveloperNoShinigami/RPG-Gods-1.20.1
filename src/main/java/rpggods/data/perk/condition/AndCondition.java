@@ -8,10 +8,10 @@ package rpggods.data.perk.condition;
 
 import com.google.common.collect.ImmutableList;
 import com.mojang.serialization.Codec;
-import net.minecraft.ChatFormatting;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.chat.Component;
 import rpggods.RGRegistry;
+import rpggods.util.ComponentUtils;
 
 import javax.annotation.concurrent.Immutable;
 import java.util.ArrayList;
@@ -47,18 +47,14 @@ public class AndCondition extends PerkCondition {
 
     @Override
     public Component createDescription(final RegistryAccess registryAccess) {
-        final List<Component> builder = new ArrayList<>();
+        // collect list of child descriptions
+        final List<Component> list = new ArrayList<>(children.size());
         for(PerkCondition child : children) {
-            for(Component c : child.createDescription(registryAccess)) {
-                builder.add(Component.literal("  ").append(c));
-                builder.add(Component.translatable("rpggods.perk_condition.and").withStyle(ChatFormatting.GOLD));
-            }
+            list.add(child.createDescription(registryAccess));
         }
-        // remove trailing entry
-        if(!builder.isEmpty()) {
-            builder.remove(builder.size() - 1);
-        }
-        return ImmutableList.copyOf(builder);
+        // join with "and" delimiter
+        final Component delimiter = Component.translatable(PREFIX + "and");
+        return ComponentUtils.join(list, delimiter);
     }
 
     @Override

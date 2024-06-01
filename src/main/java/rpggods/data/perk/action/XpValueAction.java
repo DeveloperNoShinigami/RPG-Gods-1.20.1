@@ -12,6 +12,7 @@ import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.ExperienceOrb;
 import rpggods.RGRegistry;
+import rpggods.util.ComponentUtils;
 
 public class XpValueAction extends PerkAction {
 
@@ -37,7 +38,7 @@ public class XpValueAction extends PerkAction {
 
     @Override
     public Component createDescription(RegistryAccess registryAccess) {
-        final Component percentage = createPercentageComponent(multiplier);
+        final Component percentage = ComponentUtils.createPercentageComponent(multiplier);
         return Component.translatable(PREFIX + "xp" + SUFFIX, percentage);
     }
 

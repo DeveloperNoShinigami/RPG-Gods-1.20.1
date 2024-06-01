@@ -24,6 +24,7 @@ import net.minecraftforge.event.ForgeEventFactory;
 import net.minecraftforge.event.entity.living.BabyEntitySpawnEvent;
 import net.minecraftforge.registries.ForgeRegistries;
 import rpggods.RGRegistry;
+import rpggods.util.ComponentUtils;
 import rpggods.util.DeferredHolderSet;
 
 public class OffspringCountAction extends PerkAction {
@@ -89,7 +90,7 @@ public class OffspringCountAction extends PerkAction {
 
     @Override
     public Component createDescription(RegistryAccess registryAccess) {
-        final Component boundsComponent = createBoundsComponent(amount.getMinValue(), amount.getMaxValue());
+        final Component boundsComponent = ComponentUtils.createBoundsComponent(amount.getMinValue(), amount.getMaxValue());
         return Component.translatable(PREFIX + "offspring_count" + SUFFIX, boundsComponent);
     }
 

@@ -12,6 +12,7 @@ import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.projectile.Arrow;
 import rpggods.RGRegistry;
+import rpggods.util.ComponentUtils;
 
 public class ArrowDamageAmountAction extends PerkAction {
 
@@ -37,7 +38,7 @@ public class ArrowDamageAmountAction extends PerkAction {
 
     @Override
     public Component createDescription(RegistryAccess registryAccess) {
-        final Component percentage = createPercentageComponent(multiplier - 1.0F);
+        final Component percentage = ComponentUtils.createPercentageComponent(multiplier - 1.0F);
         return Component.translatable(PREFIX + "arrow_damage" + SUFFIX, percentage);
     }
 

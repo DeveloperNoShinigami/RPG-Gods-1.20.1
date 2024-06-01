@@ -13,6 +13,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.util.RandomSource;
 import net.minecraft.util.valueproviders.IntProvider;
 import rpggods.RGRegistry;
+import rpggods.util.ComponentUtils;
 
 public class CropYieldAction extends PerkAction {
 
@@ -39,7 +40,7 @@ public class CropYieldAction extends PerkAction {
 
     @Override
     public Component createDescription(RegistryAccess registryAccess) {
-        final Component boundsComponent = createBoundsComponent(amount.getMinValue(), amount.getMaxValue());
+        final Component boundsComponent = ComponentUtils.createBoundsComponent(amount.getMinValue(), amount.getMaxValue());
         return Component.translatable(PREFIX + "crop_yield" + SUFFIX, boundsComponent);
     }
 

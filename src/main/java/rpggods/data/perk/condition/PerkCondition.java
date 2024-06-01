@@ -7,10 +7,8 @@
 package rpggods.data.perk.condition;
 
 import com.mojang.serialization.Codec;
-import net.minecraft.ChatFormatting;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.util.ExtraCodecs;
 import net.minecraft.util.StringRepresentable;
 import rpggods.RGRegistry;
@@ -24,6 +22,8 @@ public abstract class PerkCondition {
     public static final Codec<PerkCondition> DIRECT_CODEC = ExtraCodecs.lazyInitializedCodec(() -> RGRegistry.PERK_CONDITION_TYPES_SUPPLIER.get().getCodec())
             .dispatch(PerkCondition::getCodec, Function.identity());
     public static final Codec<List<PerkCondition>> LIST_CODEC = RGCodecUtils.listOrElementCodec(DIRECT_CODEC);
+
+    protected static final String PREFIX = "favor.perk.condition.";
 
     private Component description;
 
@@ -58,15 +58,6 @@ public abstract class PerkCondition {
             description = createDescription(registryAccess);
         }
         return description;
-    }
-
-    /**
-     * @param resourceKey a resource key
-     * @param <T> the resource key type
-     * @return the text representation of the resource key location
-     */
-    protected static <T> Component createResourceKeyDescription(ResourceKey<T> resourceKey) {
-        return Component.literal(resourceKey.location().toString()).withStyle(ChatFormatting.GRAY);
     }
 
     @Deprecated

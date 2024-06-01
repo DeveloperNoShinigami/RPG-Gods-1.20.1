@@ -6,13 +6,11 @@
 
 package rpggods.data.perk.condition;
 
-import com.google.common.collect.ImmutableList;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.advancements.critereon.MinMaxBounds;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.level.ServerLevel;
 import rpggods.RGRegistry;
 import rpggods.util.RGCodecUtils;
 
@@ -47,8 +45,7 @@ public class TimeCondition extends PerkCondition {
 
     @Override
     public boolean test(PerkConditionContext context) {
-        ServerLevel serverlevel = (ServerLevel) context.getLevel();
-        long i = serverlevel.getDayTime();
+        long i = context.getLevel().getDayTime();
         if (this.period != null) {
             i %= this.period;
         }
@@ -65,10 +62,10 @@ public class TimeCondition extends PerkCondition {
     public Component createDescription(final RegistryAccess registryAccess) {
         int min = Optional.ofNullable(range.getMin()).orElse(0);
         int max = Optional.ofNullable(range.getMax()).orElse(0);
-        if(period != null) {
-            return ImmutableList.of(Component.translatable("rpggods.perk_condition.time.period", min, max, period));
+        if(this.period != null) {
+            return Component.translatable(PREFIX + "time.period", min, max, period);
         }
-        return ImmutableList.of(Component.translatable("rpggods.perk_condition.time", min, max));
+        return Component.translatable(PREFIX + "time", min, max);
     }
 
     @Override

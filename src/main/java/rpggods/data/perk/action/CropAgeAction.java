@@ -25,6 +25,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import rpggods.RGRegistry;
+import rpggods.util.ComponentUtils;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -139,7 +140,7 @@ public class CropAgeAction extends PerkAction {
         } else {
             suffix = "grow";
         }
-        final Component countComponent = createBoundsComponent(count.getMinValue(), count.getMaxValue());
+        final Component countComponent = ComponentUtils.createBoundsComponent(count.getMinValue(), count.getMaxValue());
         return Component.translatable(PREFIX + "crop_age" + SUFFIX + "." + suffix, countComponent);
     }
 
