@@ -13,7 +13,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.util.valueproviders.IntProvider;
 import net.minecraft.world.entity.projectile.AbstractArrow;
 import rpggods.RGRegistry;
-import rpggods.util.ComponentUtils;
+import rpggods.util.RGComponentUtils;
 
 public class ArrowCountAction extends PerkAction {
 
@@ -52,7 +52,7 @@ public class ArrowCountAction extends PerkAction {
 
     @Override
     public Component createDescription(RegistryAccess registryAccess) {
-        Component boundsComponent = ComponentUtils.createBoundsComponent(amount.getMinValue(), amount.getMaxValue());
+        Component boundsComponent = RGComponentUtils.createBoundsComponent(amount.getMinValue(), amount.getMaxValue());
         return Component.translatable(PREFIX + "arrow_count" + SUFFIX, boundsComponent);
     }
 

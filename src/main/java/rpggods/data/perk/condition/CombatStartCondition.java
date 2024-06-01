@@ -17,7 +17,7 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraftforge.registries.ForgeRegistries;
 import rpggods.RGEvents;
 import rpggods.RGRegistry;
-import rpggods.util.ComponentUtils;
+import rpggods.util.RGComponentUtils;
 import rpggods.util.DeferredHolderSet;
 
 import javax.annotation.concurrent.Immutable;
@@ -65,9 +65,9 @@ public class CombatStartCondition extends PerkCondition {
             return Component.translatable(PREFIX + "combat_start");
         }
         // create description when one or more entity types are specified
-        List<Component> holderSetComponent = ComponentUtils.createHolderSetDescription(BuiltInRegistries.ENTITY_TYPE, holderSet, EntityType::getDescription);
+        List<Component> holderSetComponent = RGComponentUtils.createHolderSetDescription(BuiltInRegistries.ENTITY_TYPE, holderSet, EntityType::getDescription);
         final Component delimiter = Component.translatable("favor.perk.condition.or");
-        return Component.translatable(PREFIX + "combat_start.specific", ComponentUtils.join(holderSetComponent, delimiter));
+        return Component.translatable(PREFIX + "combat_start.specific", RGComponentUtils.join(holderSetComponent, delimiter));
     }
 
     @Override

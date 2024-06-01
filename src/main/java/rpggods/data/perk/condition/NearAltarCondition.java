@@ -19,7 +19,7 @@ import rpggods.RGRegistry;
 import rpggods.data.deity.Altar;
 import rpggods.data.deity.DeityContainer;
 import rpggods.entity.AltarEntity;
-import rpggods.util.ComponentUtils;
+import rpggods.util.RGComponentUtils;
 import rpggods.util.DeferredHolderSet;
 import rpggods.util.RGCodecUtils;
 
@@ -87,7 +87,7 @@ public class NearAltarCondition extends PerkCondition {
         // load holder set
         final HolderSet<Altar> holderSet = altar.get(altarRegistry);
         // create list of altar components
-        final List<Component> altarComponentList = ComponentUtils.createHolderSetDescription(altarRegistry, holderSet, altar -> {
+        final List<Component> altarComponentList = RGComponentUtils.createHolderSetDescription(altarRegistry, holderSet, altar -> {
             if(altar.getDeity().isPresent()) {
                 return DeityContainer.getOrCreate(registryAccess, altar.getDeity().get()).getName();
             }
@@ -98,7 +98,7 @@ public class NearAltarCondition extends PerkCondition {
         });
         // join altar components
         final Component delimiter = Component.translatable("favor.perk.condition.or");
-        final Component altarComponent = ComponentUtils.join(altarComponentList, delimiter);
+        final Component altarComponent = RGComponentUtils.join(altarComponentList, delimiter);
         return Component.translatable(PREFIX + "near_altar", altarComponent);
     }
 

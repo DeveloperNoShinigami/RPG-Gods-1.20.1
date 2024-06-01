@@ -27,8 +27,7 @@ import net.minecraft.world.level.block.CampfireBlock;
 import net.minecraft.world.level.levelgen.blockpredicates.BlockPredicate;
 import net.minecraft.world.level.levelgen.structure.Structure;
 import rpggods.RGRegistry;
-import rpggods.RPGGods;
-import rpggods.util.ComponentUtils;
+import rpggods.util.RGComponentUtils;
 import rpggods.util.RGCodecUtils;
 
 import javax.annotation.Nullable;
@@ -163,17 +162,17 @@ public class LocationCondition extends PerkCondition {
         }
         // biome
         if(this.biome != null) {
-            Component text = ComponentUtils.createResourceKeyDescription(this.biome);
+            Component text = RGComponentUtils.createResourceKeyDescription(this.biome);
             builder.add(Component.translatable(PREFIX + "location.biome", text));
         }
         // structure
         if(this.structure != null) {
-            Component text = ComponentUtils.createResourceKeyDescription(this.structure);
+            Component text = RGComponentUtils.createResourceKeyDescription(this.structure);
             builder.add(Component.translatable(PREFIX + "location.structure", text));
         }
         // dimension
         if(this.dimension != null) {
-            Component text = ComponentUtils.createResourceKeyDescription(this.dimension);
+            Component text = RGComponentUtils.createResourceKeyDescription(this.dimension);
             builder.add(Component.translatable(PREFIX + "location.dimension", text));
         }
         // smokey
@@ -182,12 +181,12 @@ public class LocationCondition extends PerkCondition {
         }
         // light
         if(this.light != LightPredicate.ANY) {
-            final Component lightBoundsComponent = ComponentUtils.createBoundsComponent(this.light.composite.getMin(), this.light.composite.getMax());
+            final Component lightBoundsComponent = RGComponentUtils.createBoundsComponent(this.light.composite.getMin(), this.light.composite.getMax());
             builder.add(Component.translatable(PREFIX + "location.light", lightBoundsComponent));
         }
         // join components
         final Component delimiter = Component.translatable("favor.perk.condition.and");
-        return ComponentUtils.join(builder, delimiter);
+        return RGComponentUtils.join(builder, delimiter);
     }
 
     private static boolean hasStructure(final RegistryAccess registryAccess, final ResourceKey<Structure> key, final Set<Structure> structures) {
@@ -259,7 +258,7 @@ public class LocationCondition extends PerkCondition {
         }
 
         private static Component createDescription(final String axis, final MinMaxBounds.Doubles bounds) {
-            final Component boundsComponent = ComponentUtils.createBoundsComponent(bounds.getMin(), bounds.getMax());
+            final Component boundsComponent = RGComponentUtils.createBoundsComponent(bounds.getMin(), bounds.getMax());
             final Component axisComponent = Component.translatable(PREFIX + "location.position." + axis);
             return Component.translatable(PREFIX + "location.position", axisComponent, boundsComponent);
         }

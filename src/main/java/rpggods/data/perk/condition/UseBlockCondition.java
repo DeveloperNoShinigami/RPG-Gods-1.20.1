@@ -15,7 +15,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.block.Block;
 import net.minecraftforge.registries.ForgeRegistries;
 import rpggods.RGRegistry;
-import rpggods.util.ComponentUtils;
+import rpggods.util.RGComponentUtils;
 import rpggods.util.DeferredHolderSet;
 
 import javax.annotation.concurrent.Immutable;
@@ -49,10 +49,10 @@ public class UseBlockCondition extends PerkCondition {
     public Component createDescription(RegistryAccess registryAccess) {
         // create components for holder set
         final HolderSet<Block> holderSet = block.get(BuiltInRegistries.BLOCK);
-        final List<Component> blockComponentList = ComponentUtils.createHolderSetDescription(BuiltInRegistries.BLOCK, holderSet, Block::getName);
+        final List<Component> blockComponentList = RGComponentUtils.createHolderSetDescription(BuiltInRegistries.BLOCK, holderSet, Block::getName);
         // join holder components
         final Component delimiter = Component.translatable("favor.perk.condition.or");
-        final Component blockComponent = ComponentUtils.join(blockComponentList, delimiter);
+        final Component blockComponent = RGComponentUtils.join(blockComponentList, delimiter);
         // create description
         return Component.translatable(PREFIX + "use_block", blockComponent);
     }

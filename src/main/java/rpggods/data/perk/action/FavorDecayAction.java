@@ -15,7 +15,7 @@ import rpggods.RGRegistry;
 import rpggods.data.deity.Deity;
 import rpggods.data.deity.DeityContainer;
 import rpggods.data.favor.FavorLevel;
-import rpggods.util.ComponentUtils;
+import rpggods.util.RGComponentUtils;
 
 public class FavorDecayAction extends PerkAction {
 
@@ -51,7 +51,7 @@ public class FavorDecayAction extends PerkAction {
 
     @Override
     public Component createDescription(RegistryAccess registryAccess) {
-        final Component percentage = ComponentUtils.createPercentageComponent(amount);
+        final Component percentage = RGComponentUtils.createPercentageComponent(amount);
         final Component deityName = DeityContainer.getOrCreate(registryAccess, this.deity).getName();
         return Component.translatable(PREFIX + "favor_decay" + SUFFIX, percentage, deityName);
     }

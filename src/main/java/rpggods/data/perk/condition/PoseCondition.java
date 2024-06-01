@@ -11,7 +11,7 @@ import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.Pose;
 import rpggods.RGRegistry;
-import rpggods.util.ComponentUtils;
+import rpggods.util.RGComponentUtils;
 import rpggods.util.RGCodecUtils;
 
 import javax.annotation.concurrent.Immutable;
@@ -50,7 +50,7 @@ public class PoseCondition extends PerkCondition {
         final List<Component> poseComponentList = new ArrayList<>(pose.size());
         pose.forEach(p -> poseComponentList.add(Component.translatable("pose." + p.toString().toLowerCase(Locale.ENGLISH))));
         final Component delimiter = Component.translatable("favor.perk.condition.or");
-        final Component poseComponent = ComponentUtils.join(poseComponentList, delimiter);
+        final Component poseComponent = RGComponentUtils.join(poseComponentList, delimiter);
         return Component.translatable(PREFIX + "pose", poseComponent);
     }
 

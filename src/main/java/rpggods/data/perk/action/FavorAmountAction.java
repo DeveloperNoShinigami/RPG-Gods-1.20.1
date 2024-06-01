@@ -17,7 +17,7 @@ import rpggods.RGRegistry;
 import rpggods.data.deity.Deity;
 import rpggods.data.deity.DeityContainer;
 import rpggods.data.favor.FavorLevel;
-import rpggods.util.ComponentUtils;
+import rpggods.util.RGComponentUtils;
 import rpggods.util.FavorChangedEvent;
 
 public class FavorAmountAction extends PerkAction {
@@ -67,7 +67,7 @@ public class FavorAmountAction extends PerkAction {
 
     @Override
     public Component createDescription(RegistryAccess registryAccess) {
-        final Component boundsComponent = ComponentUtils.createBoundsComponent(amount.getMinValue(), amount.getMaxValue());
+        final Component boundsComponent = RGComponentUtils.createBoundsComponent(amount.getMinValue(), amount.getMaxValue());
         final Component deityName = DeityContainer.getOrCreate(registryAccess, this.deity).getName();
         return Component.translatable(PREFIX + "favor" + SUFFIX + "." + this.type.getSerializedName(), boundsComponent, deityName);
     }

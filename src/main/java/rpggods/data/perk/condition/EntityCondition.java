@@ -17,7 +17,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.EntityType;
 import net.minecraftforge.registries.ForgeRegistries;
 import rpggods.RGRegistry;
-import rpggods.util.ComponentUtils;
+import rpggods.util.RGComponentUtils;
 import rpggods.util.DeferredHolderSet;
 
 import java.util.List;
@@ -57,8 +57,8 @@ public abstract class EntityCondition extends PerkCondition {
     public Component createDescription(RegistryAccess registryAccess) {
         final HolderSet<EntityType<?>> holderSet = entityType.get(BuiltInRegistries.ENTITY_TYPE);
         final Component delimiter = Component.translatable(PREFIX + "or");
-        final List<Component> descriptions = ComponentUtils.createHolderSetDescription(BuiltInRegistries.ENTITY_TYPE, holderSet, EntityType::getDescription);
-        return ComponentUtils.join(descriptions, delimiter);
+        final List<Component> descriptions = RGComponentUtils.createHolderSetDescription(BuiltInRegistries.ENTITY_TYPE, holderSet, EntityType::getDescription);
+        return RGComponentUtils.join(descriptions, delimiter);
     }
 
     /** Entity hurt player **/

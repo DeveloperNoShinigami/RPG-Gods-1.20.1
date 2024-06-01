@@ -14,7 +14,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ItemStack;
 import rpggods.RGRegistry;
-import rpggods.util.ComponentUtils;
+import rpggods.util.RGComponentUtils;
 import rpggods.util.RGCodecUtils;
 
 import javax.annotation.concurrent.Immutable;
@@ -54,7 +54,7 @@ public class ItemCondition extends PerkCondition {
 
     @Override
     public Component createDescription(final RegistryAccess registryAccess) {
-        final Component itemDescription = ComponentUtils.createItemPredicateDescription(registryAccess, itemPredicate);
+        final Component itemDescription = RGComponentUtils.createItemPredicateDescription(registryAccess, itemPredicate);
         final Component slotDescription = Component.translatable("equipment.slot." + equipmentSlot.getName());
         return Component.translatable(PREFIX + "item", itemDescription, slotDescription);
     }

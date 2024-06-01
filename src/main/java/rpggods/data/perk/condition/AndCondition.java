@@ -11,7 +11,7 @@ import com.mojang.serialization.Codec;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.chat.Component;
 import rpggods.RGRegistry;
-import rpggods.util.ComponentUtils;
+import rpggods.util.RGComponentUtils;
 
 import javax.annotation.concurrent.Immutable;
 import java.util.ArrayList;
@@ -54,7 +54,7 @@ public class AndCondition extends PerkCondition {
         }
         // join with "and" delimiter
         final Component delimiter = Component.translatable(PREFIX + "and");
-        return ComponentUtils.join(list, delimiter);
+        return RGComponentUtils.join(list, delimiter);
     }
 
     @Override
