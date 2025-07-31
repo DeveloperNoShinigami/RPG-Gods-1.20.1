@@ -6,6 +6,7 @@
 
 package rpggods.data.perk.action;
 
+import com.google.common.collect.ImmutableList;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.RegistryAccess;
@@ -15,6 +16,8 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import rpggods.RGRegistry;
 import rpggods.util.RGCodecUtils;
+
+import java.util.List;
 
 public class GiveItemAction extends PerkAction {
 
@@ -48,8 +51,8 @@ public class GiveItemAction extends PerkAction {
     }
 
     @Override
-    public Component createDescription(RegistryAccess registryAccess) {
-        return Component.translatable(PREFIX + "item" + SUFFIX, itemStack.getCount(), itemStack.getHoverName());
+    public List<Component> createDescription(RegistryAccess registryAccess) {
+        return ImmutableList.of(itemStack.getHoverName());
     }
 
     @Override

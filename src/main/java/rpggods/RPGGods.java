@@ -29,13 +29,30 @@ import net.minecraftforge.server.ServerLifecycleHooks;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import rpggods.client.RGClientEvents;
+import rpggods.data.deity.Altar;
+import rpggods.data.deity.Deity;
+import rpggods.data.deity.DeityContainer;
+import rpggods.data.deity.Offering;
+import rpggods.data.deity.Sacrifice;
 import rpggods.data.favor.IFavor;
+import rpggods.data.perk.Affinity;
+import rpggods.data.perk.AffinityType;
+import rpggods.data.perk.Perk;
 import rpggods.data.tameable.ITameable;
 import rpggods.network.CUpdateAltarPacket;
+import rpggods.network.SAltarPacket;
+import rpggods.network.SDeityPacket;
+import rpggods.network.SOfferingPacket;
+import rpggods.network.SPerkPacket;
+import rpggods.network.SSacrificePacket;
 import rpggods.network.SUpdateAltarPacket;
 import rpggods.network.SUpdateSittingPacket;
+import rpggods.util.CodecJsonDataManager;
 
 import javax.annotation.Nullable;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Mod(RPGGods.MODID)
@@ -50,9 +67,30 @@ public class RPGGods {
 
     public static Capability<ITameable> TAMEABLE = CapabilityManager.get(new CapabilityToken<>(){});
 
-    private static final String PROTOCOL_VERSION = "4";
+    private static final String PROTOCOL_VERSION = "3";
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(new ResourceLocation(MODID, "channel"),
             () -> PROTOCOL_VERSION, PROTOCOL_VERSION::equals, PROTOCOL_VERSION::equals);
+
+    // Map of Deity ID to DeityHelper
+    public static final Map<ResourceLocation, DeityContainer> DEITY_HELPER = new HashMap<>();
+    // Map of Entity ID to Perk IDs of perks that affect affinity
+    public static final Map<ResourceLocation, Map<AffinityType, List<ResourceLocation>>> AFFINITY = new HashMap<>();
+
+    // Reloadable data resource listeners
+    protected static final CodecJsonDataManager<Altar> ALTAR_JSON_MANAGER = new CodecJsonDataManager<>("deity/altar", Altar.CODEC);
+    public static final Map<ResourceLocation, Altar> ALTAR_MAP = new HashMap<>();
+
+    protected static final CodecJsonDataManager<Deity> DEITY_JSON_MANAGER = new CodecJsonDataManager<>("deity/deity", Deity.CODEC);
+    public static final Map<ResourceLocation, Deity> DEITY_MAP = new HashMap<>();
+
+    protected static final CodecJsonDataManager<Offering> OFFERING_JSON_MANAGER = new CodecJsonDataManager<>("deity/offering", Offering.CODEC);
+    public static final Map<ResourceLocation, Offering> OFFERING_MAP = new HashMap<>();
+
+    protected static final CodecJsonDataManager<Perk> PERK_JSON_MANAGER = new CodecJsonDataManager<>("deity/perk", Perk.CODEC);
+    public static final Map<ResourceLocation, Perk> PERK_MAP = new HashMap<>();
+
+    protected static final CodecJsonDataManager<Sacrifice> SACRIFICE_JSON_MANAGER = new CodecJsonDataManager<>("deity/sacrifice", Sacrifice.CODEC);
+    public static final Map<ResourceLocation, Sacrifice> SACRIFICE_MAP = new HashMap<>();
 
     public static final Logger LOGGER = LogManager.getFormatterLogger(RPGGods.MODID);
 
@@ -61,7 +99,7 @@ public class RPGGods {
         RGRegistry.register();
         // Mod event bus listeners
         FMLJavaModLoadingContext.get().getModEventBus().register(RGClientEvents.class);
-        FMLJavaModLoadingContext.get().getModEventBus().register(RGEvents.ModHandler.class);
+        FMLJavaModLoadingContext.get().getModEventBus().register(RGEvents.ModEvents.class);
         FMLJavaModLoadingContext.get().getModEventBus().addListener(RPGGods::setup);
         // Config file
         ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, CONFIG_SPEC);
@@ -70,16 +108,28 @@ public class RPGGods {
         // Required for data pack sync and favor capability
         MinecraftForge.EVENT_BUS.register(RGData.class);
         // Events that affect Favor and Perks
-        MinecraftForge.EVENT_BUS.register(RGEvents.ForgeHandler.class);
+        MinecraftForge.EVENT_BUS.register(RGEvents.ForgeEvents.class);
         // Events that are client-only
         DistExecutor.runWhenOn(Dist.CLIENT, () -> () -> {
-            MinecraftForge.EVENT_BUS.register(RGEvents.ClientHandler.class);
+            MinecraftForge.EVENT_BUS.register(RGEvents.ClientEvents.class);
         });
         // Packets
         int messageId = 0;
+        CHANNEL.registerMessage(messageId++, SDeityPacket.class, SDeityPacket::toBytes, SDeityPacket::fromBytes, SDeityPacket::handlePacket, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+        CHANNEL.registerMessage(messageId++, SAltarPacket.class, SAltarPacket::toBytes, SAltarPacket::fromBytes, SAltarPacket::handlePacket, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+        CHANNEL.registerMessage(messageId++, SOfferingPacket.class, SOfferingPacket::toBytes, SOfferingPacket::fromBytes, SOfferingPacket::handlePacket, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+        CHANNEL.registerMessage(messageId++, SSacrificePacket.class, SSacrificePacket::toBytes, SSacrificePacket::fromBytes, SSacrificePacket::handlePacket, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+        CHANNEL.registerMessage(messageId++, SPerkPacket.class, SPerkPacket::toBytes, SPerkPacket::fromBytes, SPerkPacket::handlePacket, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         CHANNEL.registerMessage(messageId++, SUpdateSittingPacket.class, SUpdateSittingPacket::toBytes, SUpdateSittingPacket::fromBytes, SUpdateSittingPacket::handlePacket, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         CHANNEL.registerMessage(messageId++, SUpdateAltarPacket.class, SUpdateAltarPacket::toBytes, SUpdateAltarPacket::fromBytes, SUpdateAltarPacket::handlePacket, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         CHANNEL.registerMessage(messageId++, CUpdateAltarPacket.class, CUpdateAltarPacket::toBytes, CUpdateAltarPacket::fromBytes, CUpdateAltarPacket::handlePacket, Optional.of(NetworkDirection.PLAY_TO_SERVER));
+
+        // data managers
+        ALTAR_JSON_MANAGER.subscribeAsSyncable(CHANNEL, SAltarPacket::new);
+        DEITY_JSON_MANAGER.subscribeAsSyncable(CHANNEL, SDeityPacket::new);
+        OFFERING_JSON_MANAGER.subscribeAsSyncable(CHANNEL, SOfferingPacket::new);
+        PERK_JSON_MANAGER.subscribeAsSyncable(CHANNEL, SPerkPacket::new);
+        SACRIFICE_JSON_MANAGER.subscribeAsSyncable(CHANNEL, SSacrificePacket::new);
     }
 
     public static void setup(final FMLCommonSetupEvent event) {

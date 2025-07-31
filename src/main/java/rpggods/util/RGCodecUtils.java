@@ -120,7 +120,7 @@ public final class RGCodecUtils {
     private static final BiMap<String, Pose> POSE_MAP = new ImmutableBiMap.Builder<String, Pose>()
             .putAll(Arrays
                     .stream(Pose.values())
-                    .collect(Collectors.toMap(pose -> pose.name().toLowerCase(Locale.ENGLISH), Function.identity())))
+                    .collect(Collectors.toMap(pose -> pose.name().toLowerCase(), pose -> pose)))
             .build();
     /** {@link {Pose}} codec **/
     public static final Codec<Pose> POSE_CODEC = Codec.STRING.comapFlatMap((string) -> {

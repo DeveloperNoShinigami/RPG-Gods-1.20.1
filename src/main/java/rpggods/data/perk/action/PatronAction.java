@@ -6,6 +6,7 @@
 
 package rpggods.data.perk.action;
 
+import com.google.common.collect.ImmutableList;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.ChatFormatting;
@@ -19,6 +20,7 @@ import rpggods.data.deity.DeityContainer;
 import rpggods.data.favor.IFavor;
 import rpggods.data.perk.Patron;
 
+import java.util.List;
 
 public class PatronAction extends PerkAction {
 
@@ -39,8 +41,8 @@ public class PatronAction extends PerkAction {
         final IFavor favor = context.getFavor();
         if(favor.setPatron(player, patron)) {
             // send player feedback
-            Component message = getDescription(context.getRegistryAccess());
-            player.displayClientMessage(message.copy().withStyle(ChatFormatting.BOLD, ChatFormatting.LIGHT_PURPLE), true);
+            List<Component> messages = getDescription(context.getRegistryAccess());
+            messages.forEach(message -> player.displayClientMessage(message.copy().withStyle(ChatFormatting.BOLD, ChatFormatting.LIGHT_PURPLE), true));
             // play sound
             context.getLevel().playSound(player, player.blockPosition(), SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundSource.PLAYERS, 1.0F, 1.0F);
         }
@@ -48,12 +50,12 @@ public class PatronAction extends PerkAction {
     }
 
     @Override
-    public Component createDescription(RegistryAccess registryAccess) {
+    public List<Component> createDescription(RegistryAccess registryAccess) {
         if (patron.getDeity().isPresent()) {
-            Component deityName = DeityContainer.getOrCreate(registryAccess, patron.getDeity().get()).getName();
-            return Component.translatable(PREFIX + "patron" + SUFFIX + ".add", deityName);
+            Component deityName = DeityContainer.getName(patron.getDeity().get());
+            return ImmutableList.of(Component.translatable("favor.perk.type.patron.description.add", deityName));
         }
-        return Component.translatable(PREFIX + "patron" + SUFFIX + ".remove");
+        return ImmutableList.of(Component.translatable("favor.perk.type.patron.description.remove"));
     }
 
     @Override

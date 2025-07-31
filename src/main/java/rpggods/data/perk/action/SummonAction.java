@@ -6,6 +6,7 @@
 
 package rpggods.data.perk.action;
 
+import com.google.common.collect.ImmutableList;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
@@ -31,6 +32,7 @@ import net.minecraftforge.registries.ForgeRegistries;
 import rpggods.RGRegistry;
 import rpggods.RPGGods;
 
+import java.util.List;
 import java.util.Optional;
 
 public class SummonAction extends PerkAction {
@@ -122,8 +124,8 @@ public class SummonAction extends PerkAction {
     }
 
     @Override
-    public Component createDescription(RegistryAccess registryAccess) {
-        return Component.translatable(PREFIX + "summon" + SUFFIX, entityType.getDescription());
+    public List<Component> createDescription(RegistryAccess registryAccess) {
+        return ImmutableList.of(entityType.getDescription());
     }
 
     @Override

@@ -6,16 +6,19 @@
 
 package rpggods.data.perk.condition;
 
+import com.google.common.collect.ImmutableList;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.advancements.critereon.MinMaxBounds;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
 import rpggods.RGRegistry;
 import rpggods.util.RGCodecUtils;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
+import java.util.List;
 import java.util.Optional;
 
 @Immutable
@@ -45,7 +48,8 @@ public class TimeCondition extends PerkCondition {
 
     @Override
     public boolean test(PerkConditionContext context) {
-        long i = context.getLevel().getDayTime();
+        ServerLevel serverlevel = (ServerLevel) context.getLevel();
+        long i = serverlevel.getDayTime();
         if (this.period != null) {
             i %= this.period;
         }
@@ -59,13 +63,13 @@ public class TimeCondition extends PerkCondition {
     }
 
     @Override
-    public Component createDescription(final RegistryAccess registryAccess) {
+    public List<Component> createDescription(final RegistryAccess registryAccess) {
         int min = Optional.ofNullable(range.getMin()).orElse(0);
         int max = Optional.ofNullable(range.getMax()).orElse(0);
-        if(this.period != null) {
-            return Component.translatable(PREFIX + "time.period", min, max, period);
+        if(period != null) {
+            return ImmutableList.of(Component.translatable("rpggods.perk_condition.time.period", min, max, period));
         }
-        return Component.translatable(PREFIX + "time", min, max);
+        return ImmutableList.of(Component.translatable("rpggods.perk_condition.time", min, max));
     }
 
     @Override

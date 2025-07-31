@@ -1,7 +1,7 @@
 {
   "replace": false,
   "entries": [
-    "rpggods:autosmelt_and_unsmelt",
-    "rpggods:crop_yield"
+    "rpggods:autosmelt_or_cobble",
+    "rpggods:crop_multiplier"
   ]
 }

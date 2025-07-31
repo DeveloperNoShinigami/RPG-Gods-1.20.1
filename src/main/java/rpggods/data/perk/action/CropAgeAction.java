@@ -6,6 +6,7 @@
 
 package rpggods.data.perk.action;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
@@ -25,9 +26,9 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import rpggods.RGRegistry;
-import rpggods.util.RGComponentUtils;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -133,15 +134,9 @@ public class CropAgeAction extends PerkAction {
     }
 
     @Override
-    public Component createDescription(RegistryAccess registryAccess) {
-        String suffix;
-        if(amount.getMaxValue() < 0) {
-            suffix = "wither";
-        } else {
-            suffix = "grow";
-        }
-        final Component countComponent = RGComponentUtils.createBoundsComponent(count.getMinValue(), count.getMaxValue());
-        return Component.translatable(PREFIX + "crop_age" + SUFFIX + "." + suffix, countComponent);
+    public List<Component> createDescription(RegistryAccess registryAccess) {
+        final String sAmount = (this.amount.getMaxValue() > 0) ? "+" + this.amount.getMaxValue() : "" + this.amount.getMinValue();
+        return ImmutableList.of(Component.literal(sAmount));
     }
 
     @Override

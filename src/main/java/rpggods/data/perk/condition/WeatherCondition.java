@@ -6,6 +6,7 @@
 
 package rpggods.data.perk.condition;
 
+import com.google.common.collect.ImmutableList;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.RegistryAccess;
@@ -15,6 +16,7 @@ import rpggods.RGRegistry;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
+import java.util.List;
 import java.util.Optional;
 
 @Immutable
@@ -51,27 +53,27 @@ public class WeatherCondition extends PerkCondition {
     }
 
     @Override
-    public Component createDescription(final RegistryAccess registryAccess) {
+    public List<Component> createDescription(final RegistryAccess registryAccess) {
         // create components
-        final Component cRaining = Component.translatable(PREFIX + "weather.raining");
-        final Component cThundering = Component.translatable(PREFIX + "weather.thundering");
+        final Component cRaining = Component.translatable("rpggods.perk_condition.weather.raining");
+        final Component cThundering = Component.translatable("rpggods.perk_condition.weather.thundering");
         Component cRainingText = null;
         Component cThunderingText = null;
         if(isRaining != null) {
-            cRainingText = isRaining ? cRaining : Component.translatable(PREFIX + "weather.not", cRaining);
+            cRainingText = isRaining ? cRaining : Component.translatable("rpggods.perk_condition.weather.not", cRaining);
         }
         if(isThundering != null) {
-            cThunderingText = isThundering ? cThundering : Component.translatable(PREFIX + "weather.not", cThundering);
+            cThunderingText = isThundering ? cThundering : Component.translatable("rpggods.perk_condition.weather.not", cThundering);
         }
         // create description
         if(cRainingText != null && cThunderingText != null) {
-            return Component.translatable(PREFIX + "weather.multiple", cRainingText, cThunderingText);
+            return ImmutableList.of(Component.translatable("rpggods.perk_condition.weather.multiple", cRainingText, cThunderingText));
         } else if(cRainingText != null) {
-            return Component.translatable(PREFIX + "weather.single", cRainingText);
+            return ImmutableList.of(Component.translatable("rpggods.perk_condition.weather.single", cRainingText));
         } else if(cThunderingText != null) {
-            return Component.translatable(PREFIX + "weather.single", cThunderingText);
+            return ImmutableList.of(Component.translatable("rpggods.perk_condition.weather.single", cThunderingText));
         } else {
-            return Component.translatable(PREFIX + "weather.never");
+            return ImmutableList.of(Component.translatable("rpggods.perk_condition.weather.never"));
         }
     }
 

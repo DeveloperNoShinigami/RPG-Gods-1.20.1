@@ -6,18 +6,17 @@
 
 package rpggods.data.perk.condition;
 
+import com.google.common.collect.ImmutableList;
 import com.mojang.datafixers.Products;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.Holder;
-import net.minecraft.core.HolderSet;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.EntityType;
 import net.minecraftforge.registries.ForgeRegistries;
 import rpggods.RGRegistry;
-import rpggods.util.RGComponentUtils;
 import rpggods.util.DeferredHolderSet;
 
 import java.util.List;
@@ -54,11 +53,11 @@ public abstract class EntityCondition extends PerkCondition {
     }
 
     @Override
-    public Component createDescription(RegistryAccess registryAccess) {
-        final HolderSet<EntityType<?>> holderSet = entityType.get(BuiltInRegistries.ENTITY_TYPE);
-        final Component delimiter = Component.translatable(PREFIX + "or");
-        final List<Component> descriptions = RGComponentUtils.createHolderSetDescription(BuiltInRegistries.ENTITY_TYPE, holderSet, EntityType::getDescription);
-        return RGComponentUtils.join(descriptions, delimiter);
+    public List<Component> createDescription(RegistryAccess registryAccess) {
+        // TODO entity condition "or" description
+        // TODO make child classes use this description list in their own descriptions
+        // Component.translatable(entityType.get().getDescriptionId())
+        return ImmutableList.of();
     }
 
     /** Entity hurt player **/
@@ -74,11 +73,6 @@ public abstract class EntityCondition extends PerkCondition {
         @Override
         public Codec<? extends PerkCondition> getCodec() {
             return RGRegistry.PerkConditionReg.ENTITY_HURT_PLAYER.get();
-        }
-
-        @Override
-        public Component createDescription(RegistryAccess registryAccess) {
-            return Component.translatable(PREFIX + "entity_hurt_player", super.createDescription(registryAccess));
         }
     }
 
@@ -96,11 +90,6 @@ public abstract class EntityCondition extends PerkCondition {
         public Codec<? extends PerkCondition> getCodec() {
             return RGRegistry.PerkConditionReg.ENTITY_HURT_BY_PLAYER.get();
         }
-
-        @Override
-        public Component createDescription(RegistryAccess registryAccess) {
-            return Component.translatable(PREFIX + "entity_hurt_by_player", super.createDescription(registryAccess));
-        }
     }
 
     /** Entity kill player **/
@@ -116,11 +105,6 @@ public abstract class EntityCondition extends PerkCondition {
         @Override
         public Codec<? extends PerkCondition> getCodec() {
             return RGRegistry.PerkConditionReg.ENTITY_KILLED_PLAYER.get();
-        }
-
-        @Override
-        public Component createDescription(RegistryAccess registryAccess) {
-            return Component.translatable(PREFIX + "entity_killed_player", super.createDescription(registryAccess));
         }
     }
 
@@ -138,11 +122,6 @@ public abstract class EntityCondition extends PerkCondition {
         public Codec<? extends PerkCondition> getCodec() {
             return RGRegistry.PerkConditionReg.ENTITY_KILLED_BY_PLAYER.get();
         }
-
-        @Override
-        public Component createDescription(RegistryAccess registryAccess) {
-            return Component.translatable(PREFIX + "entity_killed_by_player", super.createDescription(registryAccess));
-        }
     }
 
     /** Player ride entity **/
@@ -159,11 +138,6 @@ public abstract class EntityCondition extends PerkCondition {
         public Codec<? extends PerkCondition> getCodec() {
             return RGRegistry.PerkConditionReg.ENTITY_RIDDEN_BY_PLAYER.get();
         }
-
-        @Override
-        public Component createDescription(RegistryAccess registryAccess) {
-            return Component.translatable(PREFIX + "entity_ridden_by_player", super.createDescription(registryAccess));
-        }
     }
 
     /** Player interact entity **/
@@ -179,11 +153,6 @@ public abstract class EntityCondition extends PerkCondition {
         @Override
         public Codec<? extends PerkCondition> getCodec() {
             return RGRegistry.PerkConditionReg.ENTITY_INTERACT_BY_PLAYER.get();
-        }
-
-        @Override
-        public Component createDescription(RegistryAccess registryAccess) {
-            return Component.translatable(PREFIX + "entity_interact_by_player", super.createDescription(registryAccess));
         }
     }
 }

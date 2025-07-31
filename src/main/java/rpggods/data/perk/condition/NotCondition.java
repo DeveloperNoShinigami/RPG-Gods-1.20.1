@@ -7,11 +7,14 @@
 package rpggods.data.perk.condition;
 
 import com.mojang.serialization.Codec;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.chat.Component;
 import rpggods.RGRegistry;
 
 import javax.annotation.concurrent.Immutable;
+import java.util.ArrayList;
+import java.util.List;
 
 @Immutable
 public class NotCondition extends PerkCondition {
@@ -37,8 +40,13 @@ public class NotCondition extends PerkCondition {
     }
 
     @Override
-    public Component createDescription(final RegistryAccess registryAccess) {
-        return Component.translatable(PREFIX + "not", child.createDescription(registryAccess));
+    public List<Component> createDescription(final RegistryAccess registryAccess) {
+        final List<Component> builder = new ArrayList<>();
+        builder.add(Component.translatable("rpggods.perk_condition.not").withStyle(ChatFormatting.BOLD, ChatFormatting.GOLD));
+        for(Component c : child.createDescription(registryAccess)) {
+            builder.add(Component.literal("  ").append(c));
+        }
+        return builder;
     }
 
     @Override

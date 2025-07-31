@@ -6,12 +6,14 @@
 
 package rpggods.data.perk.condition;
 
+import com.google.common.collect.ImmutableList;
 import com.mojang.serialization.Codec;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.chat.Component;
 import rpggods.RGRegistry;
 
 import javax.annotation.concurrent.Immutable;
+import java.util.List;
 
 @Immutable
 public class TrueCondition extends PerkCondition {
@@ -33,8 +35,8 @@ public class TrueCondition extends PerkCondition {
     }
 
     @Override
-    public Component createDescription(final RegistryAccess registryAccess) {
-        return Component.translatable(PREFIX + "true");
+    public List<Component> createDescription(final RegistryAccess registryAccess) {
+        return ImmutableList.of(Component.translatable("rpggods.perk_condition.true"));
     }
 
     @Override

@@ -6,44 +6,46 @@
 
 package rpggods.data.perk.action;
 
+import com.google.common.collect.ImmutableList;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import rpggods.PerkDispatcher;
+import rpggods.RGEvents;
 import rpggods.RGRegistry;
 
 import javax.annotation.Nullable;
+import java.util.List;
 import java.util.Optional;
 
 public class FunctionAction extends PerkAction {
 
     public static final Codec<FunctionAction> CODEC = RecordCodecBuilder.create(instance -> codecStart(instance)
             .and(ResourceLocation.CODEC.fieldOf("function").forGetter(o -> o.function))
-            .and(Codec.STRING.optionalFieldOf("translation_key").forGetter(o -> Optional.ofNullable(o.translationKey)))
+            .and(Codec.STRING.optionalFieldOf("translation_key").forGetter(o -> Optional.ofNullable(o.descriptionKey)))
             .apply(instance, FunctionAction::new));
 
     private final ResourceLocation function;
-    private final @Nullable String translationKey;
+    private final @Nullable String descriptionKey;
 
-    public FunctionAction(boolean isHidden, ResourceLocation function, Optional<String> translationKey) {
+    public FunctionAction(boolean isHidden, ResourceLocation function, Optional<String> descriptionKey) {
         super(isHidden);
         this.function = function;
-        this.translationKey = translationKey.orElse(null);
+        this.descriptionKey = descriptionKey.orElse(null);
     }
 
     @Override
     public boolean apply(PerkActionContext context) {
-        return PerkDispatcher.runFunction(context.getLevel(), context.getPlayer(), this.function);
+        return RGEvents.runFunction(context.getLevel(), context.getPlayer(), this.function);
     }
 
     @Override
-    public Component createDescription(RegistryAccess registryAccess) {
-        if(this.translationKey != null) {
-            return Component.translatable(this.translationKey);
+    public List<Component> createDescription(RegistryAccess registryAccess) {
+        if(this.descriptionKey != null) {
+            return ImmutableList.of(Component.translatable(this.descriptionKey));
         }
-        return Component.translatable(PREFIX + "function" + SUFFIX + ".default");
+        return ImmutableList.of(Component.translatable("favor.perk.type.function.description.default"));
     }
 
     @Override

@@ -6,14 +6,20 @@
 
 package rpggods.data.perk.action;
 
+import com.google.common.collect.ImmutableList;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.valueproviders.IntProvider;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.AbstractArrow;
+import net.minecraft.world.item.ItemStack;
 import rpggods.RGRegistry;
-import rpggods.util.RGComponentUtils;
+import rpggods.util.RGCodecUtils;
+
+import java.util.List;
 
 public class ArrowCountAction extends PerkAction {
 
@@ -33,7 +39,6 @@ public class ArrowCountAction extends PerkAction {
         if(context.getEntity().isPresent() && context.getEntity().get() instanceof AbstractArrow arrow) {
             int arrowCount = amount.sample(context.getRandom());
             double motionScale = 0.8;
-            // TODO change arrow count action to be more like multishot (+-10 degrees total)
             for(int i = 0; i < arrowCount; i++) {
                 AbstractArrow copy = (AbstractArrow) arrow.getType().create(context.getLevel());
                 copy.copyPosition(arrow);
@@ -51,9 +56,11 @@ public class ArrowCountAction extends PerkAction {
     }
 
     @Override
-    public Component createDescription(RegistryAccess registryAccess) {
-        Component boundsComponent = RGComponentUtils.createBoundsComponent(amount.getMinValue(), amount.getMaxValue());
-        return Component.translatable(PREFIX + "arrow_count" + SUFFIX, boundsComponent);
+    public List<Component> createDescription(RegistryAccess registryAccess) {
+        if(amount.getMinValue() == amount.getMaxValue()) {
+            return ImmutableList.of(Component.translatable("rpggods.perk_action.arrow_count.constant", amount.getMaxValue()));
+        }
+        return ImmutableList.of(Component.translatable("rpggods.perk_action.arrow_count.range", amount.getMinValue(), amount.getMaxValue()));
     }
 
     @Override

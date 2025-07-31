@@ -6,6 +6,7 @@
 
 package rpggods.data.perk.action;
 
+import com.google.common.collect.ImmutableList;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.ChatFormatting;
@@ -16,11 +17,13 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.player.Player;
 import rpggods.RGRegistry;
+import rpggods.data.deity.Altar;
 import rpggods.data.deity.Deity;
 import rpggods.data.deity.DeityContainer;
 import rpggods.data.favor.FavorLevel;
 import rpggods.data.favor.IFavor;
 
+import java.util.List;
 import java.util.Optional;
 
 public class UnlockAction extends PerkAction {
@@ -51,8 +54,8 @@ public class UnlockAction extends PerkAction {
         if(!level.isEnabled()) {
             level.setEnabled(true);
             // send player feedback
-            Component message = getDescription(context.getRegistryAccess());
-            player.displayClientMessage(message.copy().withStyle(ChatFormatting.BOLD, ChatFormatting.LIGHT_PURPLE), true);
+            List<Component> messages = getDescription(context.getRegistryAccess());
+            messages.forEach(message -> player.displayClientMessage(message.copy().withStyle(ChatFormatting.BOLD, ChatFormatting.LIGHT_PURPLE), true));
             // play sound
             context.getLevel().playSound(player, player.blockPosition(), SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundSource.PLAYERS, 1.0F, 1.0F);
         }
@@ -60,10 +63,13 @@ public class UnlockAction extends PerkAction {
     }
 
     @Override
-    public Component createDescription(RegistryAccess registryAccess) {
-        final DeityContainer container = DeityContainer.getOrCreate(registryAccess, this.deity);
-        final String suffix = container.getDeity().getGender().getSerializedName();
-        return Component.translatable( PREFIX + "unlock" + SUFFIX + "." + suffix, container.getDeity());
+    public List<Component> createDescription(RegistryAccess registryAccess) {
+        // TODO revise this after fixing DeityContainer
+        final DeityContainer deity = DeityContainer.getOrCreate(registryAccess, this.deity);
+        Component deityName = DeityContainer.getName(this.deity);
+        Altar altar = Altar.getRegistry(registryAccess).get(this.deity);
+        String suffix = altar != null && altar.isFemale() ? "female" : "male";
+        return ImmutableList.of(Component.translatable("favor.perk.type.unlock.description." + suffix, deityName));
     }
 
     @Override

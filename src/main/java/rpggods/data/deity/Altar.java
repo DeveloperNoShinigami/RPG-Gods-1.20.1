@@ -10,7 +10,6 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.RegistryAccess;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import rpggods.RGRegistry;
@@ -24,13 +23,13 @@ public class Altar {
 
     public static final ResourceLocation MATERIAL = new ResourceLocation("stone");
 
-    @Deprecated
-    public static final Altar EMPTY = new Altar(true, Optional.empty(), false, 0,
+    public static final Altar EMPTY = new Altar(true, Optional.empty(), false, false, 0,
             AltarItems.EMPTY, MATERIAL, AltarPose.EMPTY, false);
 
     public static final Codec<Altar> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.BOOL.optionalFieldOf("enabled", true).forGetter(Altar::isEnabled),
             Codec.STRING.optionalFieldOf("name").forGetter(Altar::getName),
+            Codec.BOOL.optionalFieldOf("female", false).forGetter(Altar::isFemale),
             Codec.BOOL.optionalFieldOf("slim", false).forGetter(Altar::isSlim),
             Codec.INT.optionalFieldOf("light", 0).forGetter(Altar::getLightLevel),
             AltarItems.CODEC.optionalFieldOf("items", AltarItems.EMPTY).forGetter(Altar::getItems),
@@ -41,6 +40,7 @@ public class Altar {
 
     private final boolean enabled;
     private final Optional<String> name;
+    private final boolean female;
     private final boolean slim;
     private final int lightLevel;
     private final AltarItems items;
@@ -52,11 +52,12 @@ public class Altar {
 
     //// CONSTRUCTOR ////
 
-    public Altar(boolean enabled, Optional<String> name, boolean slim,
+    public Altar(boolean enabled, Optional<String> name, boolean female, boolean slim,
                  int lightLevel, AltarItems items, ResourceLocation material,
                  AltarPose pose, boolean poseLocked) {
         this.enabled = enabled;
         this.name = name;
+        this.female = female;
         this.slim = slim;
         this.lightLevel = Math.max(0, Math.min(15, lightLevel));
         this.items = items;
@@ -104,6 +105,10 @@ public class Altar {
 
     public Optional<String> getName() { return name; }
 
+    public boolean isFemale() {
+        return female;
+    }
+
     public boolean isSlim() {
         return slim;
     }
@@ -133,12 +138,12 @@ public class Altar {
         final StringBuilder b = new StringBuilder("Deity:");
         b.append(" enabled[").append(enabled).append("]");
         b.append(" items[").append(items.toString()).append("]");
+        b.append(" female[").append(female).append("]");
         b.append(" slim[").append(slim).append("]");
         b.append(" pose_locked[").append(poseLocked).append("]");
         return b.toString();
     }
 
-    @Deprecated
     public static String createTranslationKey(final ResourceLocation deity) {
         return "deity." + deity.getNamespace() + "." + deity.getPath();
     }

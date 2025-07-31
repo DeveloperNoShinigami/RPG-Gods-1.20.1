@@ -80,12 +80,14 @@ import rpggods.data.perk.condition.NearAltarCondition;
 import rpggods.data.perk.condition.PoseCondition;
 import rpggods.data.perk.condition.RandomTickCondition;
 import rpggods.data.perk.condition.RitualCondition;
+import rpggods.data.perk.condition.SolarCycleCondition;
 import rpggods.data.perk.condition.FalseCondition;
 import rpggods.data.perk.condition.LocationCondition;
 import rpggods.data.perk.condition.NotCondition;
 import rpggods.data.perk.condition.OrCondition;
 import rpggods.data.perk.condition.PatronCondition;
 import rpggods.data.perk.condition.PerkCondition;
+import rpggods.data.perk.condition.RandomChanceCondition;
 import rpggods.data.perk.condition.TimeCondition;
 import rpggods.data.perk.condition.TrueCondition;
 import rpggods.data.perk.condition.UnlockedCondition;
@@ -98,8 +100,8 @@ import rpggods.item.ScrollItem;
 import rpggods.menu.AltarContainerMenu;
 import rpggods.menu.FavorContainerMenu;
 import rpggods.util.AltarStructureProcessor;
-import rpggods.util.AutosmeltAndUnsmeltLootModifier;
-import rpggods.util.CropYieldLootModifier;
+import rpggods.util.AutosmeltOrCobbleModifier;
+import rpggods.util.CropMultiplierModifier;
 import rpggods.util.ShapedAltarRecipe;
 import rpggods.util.ShapelessAltarRecipe;
 
@@ -278,10 +280,10 @@ public final class RGRegistry {
             LOOT_MODIFIER_SERIALIZERS.register(FMLJavaModLoadingContext.get().getModEventBus());
         }
 
-        public static final RegistryObject<Codec<? extends AutosmeltAndUnsmeltLootModifier>> AUTOSMELT_OR_UNSMELT_LOOT_MODIFIER =
-                LOOT_MODIFIER_SERIALIZERS.register("autosmelt_and_unsmelt", AutosmeltAndUnsmeltLootModifier.CODEC_SUPPLIER);
-        public static final RegistryObject<Codec<? extends CropYieldLootModifier>> CROP_YIELD_LOOT_MODIFIER =
-                LOOT_MODIFIER_SERIALIZERS.register("crop_yield", CropYieldLootModifier.CODEC_SUPPLIER);
+        public static final RegistryObject<Codec<? extends AutosmeltOrCobbleModifier>> AUTOSMELT_LOOT_MODIFIER =
+                LOOT_MODIFIER_SERIALIZERS.register("autosmelt_or_cobble", AutosmeltOrCobbleModifier.CODEC_SUPPLIER);
+        public static final RegistryObject<Codec<? extends CropMultiplierModifier>> CROP_LOOT_MODIFIER =
+                LOOT_MODIFIER_SERIALIZERS.register("crop_multiplier", CropMultiplierModifier.CODEC_SUPPLIER);
     }
 
     public static final class CapabilityReg {
@@ -344,8 +346,10 @@ public final class RGRegistry {
 
         public static final RegistryObject<Codec<RandomTickCondition>> RANDOM_TICK = PERK_CONDITION_TYPES.register("random_tick", () -> RandomTickCondition.CODEC);
         public static final RegistryObject<Codec<TimeCondition>> TIME = PERK_CONDITION_TYPES.register("time", () -> TimeCondition.CODEC);
+        public static final RegistryObject<Codec<SolarCycleCondition>> SOLAR_CYCLE = PERK_CONDITION_TYPES.register("solar_cycle", () -> SolarCycleCondition.CODEC);
         public static final RegistryObject<Codec<WeatherCondition>> WEATHER = PERK_CONDITION_TYPES.register("weather", () -> WeatherCondition.CODEC);
         public static final RegistryObject<Codec<LocationCondition>> LOCATION = PERK_CONDITION_TYPES.register("location", () -> LocationCondition.CODEC);
+        public static final RegistryObject<Codec<RandomChanceCondition>> CHANCE = PERK_CONDITION_TYPES.register("chance", () -> RandomChanceCondition.CODEC);
 
         public static final RegistryObject<Codec<ItemCondition>> ITEM = PERK_CONDITION_TYPES.register("item", () -> ItemCondition.CODEC);
         public static final RegistryObject<Codec<PatronCondition>> PATRON = PERK_CONDITION_TYPES.register("patron", () -> PatronCondition.CODEC);
@@ -369,7 +373,6 @@ public final class RGRegistry {
     }
 
     public static final class PerkActionReg {
-
         private static void register() {
             PERK_ACTION_TYPES.register(FMLJavaModLoadingContext.get().getModEventBus());
             PERK_ACTIONS.register(FMLJavaModLoadingContext.get().getModEventBus());
