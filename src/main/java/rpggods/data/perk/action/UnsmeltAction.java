@@ -6,11 +6,14 @@
 
 package rpggods.data.perk.action;
 
+import com.google.common.collect.ImmutableList;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.chat.Component;
 import rpggods.RGRegistry;
+
+import java.util.List;
 
 public class UnsmeltAction extends PerkAction {
 
@@ -28,8 +31,8 @@ public class UnsmeltAction extends PerkAction {
     }
 
     @Override
-    public Component createDescription(RegistryAccess registryAccess) {
-        return Component.translatable(PREFIX + "unsmelt" + SUFFIX);
+    public List<Component> createDescription(RegistryAccess registryAccess) {
+        return ImmutableList.of();
     }
 
     @Override

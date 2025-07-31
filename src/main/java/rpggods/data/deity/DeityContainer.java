@@ -11,6 +11,7 @@ import com.mojang.serialization.Codec;
 import net.minecraft.core.Registry;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
@@ -19,6 +20,7 @@ import net.minecraftforge.fml.util.thread.EffectiveSide;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.jetbrains.annotations.ApiStatus;
 import rpggods.RGRegistry;
+import rpggods.RPGGods;
 import rpggods.data.perk.Perk;
 import rpggods.data.perk.action.PerkAction;
 import rpggods.data.perk.condition.PerkCondition;
@@ -28,6 +30,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Centralizes all offerings, sacrifices, and perks
@@ -90,7 +93,7 @@ public class DeityContainer {
             for (Map.Entry<ResourceKey<Offering>, Offering> entry : offeringRegistry.entrySet()) {
                 // validate offering and add to builder
                 if (Offering.isFor(entry, id)) {
-                    ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(entry.getValue().getOffering().getItem());
+                    ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(entry.getValue().getAccept().getItem());
                     offeringBuilder.computeIfAbsent(itemId, r -> new HashMap<>())
                             .put(entry.getKey().location(), entry.getValue());
                 }
@@ -107,8 +110,7 @@ public class DeityContainer {
             for (Map.Entry<ResourceKey<Sacrifice>, Sacrifice> entry : sacrificeRegistry.entrySet()) {
                 // validate sacrifice and add to builder
                 if (Sacrifice.isFor(entry, id)) {
-                    ResourceLocation entityId = ForgeRegistries.ENTITY_TYPES.getKey(entry.getValue().getEntity());
-                    sacrificeBuilder.computeIfAbsent(entityId, r -> new HashMap<>())
+                    sacrificeBuilder.computeIfAbsent(entry.getValue().getEntity(), r -> new HashMap<>())
                             .put(entry.getKey().location(), entry.getValue());
                 }
             }
@@ -136,7 +138,7 @@ public class DeityContainer {
             Map<Codec<? extends PerkCondition>, Map<ResourceLocation, Perk>> perkByConditionBuilder = new IdentityHashMap<>();
             for(Map.Entry<ResourceLocation, Perk> entry : this.perkMap.entrySet()) {
                 // iterate each condition in the perk and add to builder
-                for(PerkCondition condition : entry.getValue().getCondition()) {
+                for(PerkCondition condition : entry.getValue().getConditions()) {
                     Codec<? extends PerkCondition> conditionType = condition.getCodec();
                     perkByConditionBuilder.computeIfAbsent(conditionType, c -> new HashMap<>())
                             .put(entry.getKey(), entry.getValue());
@@ -214,12 +216,12 @@ public class DeityContainer {
         return perkByActionMap.getOrDefault(action, ImmutableMap.of());
     }
 
-    public Deity getDeity() {
-        return this.deity;
+    public Optional<Deity> getDeity() {
+        return Optional.ofNullable(RPGGods.DEITY_MAP.get(this.id));
     }
 
-    public Component getName() {
-        return this.deity.getName();
+    public static MutableComponent getName(final ResourceLocation id) {
+        return Component.translatable(Altar.createTranslationKey(id));
     }
 
     @Override
@@ -250,7 +252,7 @@ public class DeityContainer {
      * @param isClientSide true to use the client side registry, necessary for caching when using LAN servers
      * @return the {@link DeityContainer} registry
      */
-    public static Map<ResourceLocation, DeityContainer> getRegistry(final boolean isClientSide) {
+    private static Map<ResourceLocation, DeityContainer> getRegistry(final boolean isClientSide) {
         if(isClientSide) {
             return CLIENT_REGISTRY;
         }

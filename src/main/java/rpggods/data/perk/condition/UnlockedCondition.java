@@ -6,18 +6,18 @@
 
 package rpggods.data.perk.condition;
 
+import com.google.common.collect.ImmutableList;
 import com.mojang.serialization.Codec;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import rpggods.RGRegistry;
+import rpggods.data.deity.Altar;
 import rpggods.data.deity.Deity;
-import rpggods.data.deity.DeityContainer;
 
-import javax.annotation.concurrent.Immutable;
+import java.util.List;
 import java.util.Optional;
 
-@Immutable
 public class UnlockedCondition extends PerkCondition {
 
     public static final Codec<UnlockedCondition> CODEC = ResourceLocation.CODEC
@@ -46,9 +46,8 @@ public class UnlockedCondition extends PerkCondition {
     }
 
     @Override
-    public Component createDescription(RegistryAccess registryAccess) {
-        final DeityContainer container = DeityContainer.getOrCreate(registryAccess, deity);
-        return Component.translatable(PREFIX + "unlocked", container.getName());
+    public List<Component> createDescription(RegistryAccess registryAccess) {
+        return ImmutableList.of(Component.translatable(Altar.createTranslationKey(deity)));
     }
 
     @Override

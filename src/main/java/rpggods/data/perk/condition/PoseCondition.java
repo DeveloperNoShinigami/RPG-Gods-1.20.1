@@ -6,20 +6,16 @@
 
 package rpggods.data.perk.condition;
 
+import com.google.common.collect.ImmutableList;
 import com.mojang.serialization.Codec;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.Pose;
 import rpggods.RGRegistry;
-import rpggods.util.RGComponentUtils;
 import rpggods.util.RGCodecUtils;
 
-import javax.annotation.concurrent.Immutable;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
-@Immutable
 public class PoseCondition extends PerkCondition {
 
     public static final Codec<PoseCondition> CODEC = RGCodecUtils.listOrElementCodec(RGCodecUtils.POSE_CODEC)
@@ -46,12 +42,9 @@ public class PoseCondition extends PerkCondition {
     }
 
     @Override
-    public Component createDescription(RegistryAccess registryAccess) {
-        final List<Component> poseComponentList = new ArrayList<>(pose.size());
-        pose.forEach(p -> poseComponentList.add(Component.translatable("pose." + p.toString().toLowerCase(Locale.ENGLISH))));
-        final Component delimiter = Component.translatable("favor.perk.condition.or");
-        final Component poseComponent = RGComponentUtils.join(poseComponentList, delimiter);
-        return Component.translatable(PREFIX + "pose", poseComponent);
+    public List<Component> createDescription(RegistryAccess registryAccess) {
+        // TODO pose condition description
+        return ImmutableList.of();
     }
 
     @Override

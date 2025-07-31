@@ -6,6 +6,7 @@
 
 package rpggods.data.perk.condition;
 
+import com.google.common.collect.ImmutableList;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.HolderSet;
@@ -15,13 +16,10 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.block.Block;
 import net.minecraftforge.registries.ForgeRegistries;
 import rpggods.RGRegistry;
-import rpggods.util.RGComponentUtils;
 import rpggods.util.DeferredHolderSet;
 
-import javax.annotation.concurrent.Immutable;
 import java.util.List;
 
-@Immutable
 public class UseBlockCondition extends PerkCondition {
 
     public static final Codec<UseBlockCondition> CODEC = RecordCodecBuilder.create(instance -> instance.group(
@@ -46,15 +44,9 @@ public class UseBlockCondition extends PerkCondition {
     }
 
     @Override
-    public Component createDescription(RegistryAccess registryAccess) {
-        // create components for holder set
-        final HolderSet<Block> holderSet = block.get(BuiltInRegistries.BLOCK);
-        final List<Component> blockComponentList = RGComponentUtils.createHolderSetDescription(BuiltInRegistries.BLOCK, holderSet, Block::getName);
-        // join holder components
-        final Component delimiter = Component.translatable("favor.perk.condition.or");
-        final Component blockComponent = RGComponentUtils.join(blockComponentList, delimiter);
-        // create description
-        return Component.translatable(PREFIX + "use_block", blockComponent);
+    public List<Component> createDescription(RegistryAccess registryAccess) {
+        // TODO use block condition description
+        return ImmutableList.of();
     }
 
     @Override

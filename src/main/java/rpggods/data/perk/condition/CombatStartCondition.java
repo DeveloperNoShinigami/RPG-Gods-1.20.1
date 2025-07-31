@@ -6,6 +6,7 @@
 
 package rpggods.data.perk.condition;
 
+import com.google.common.collect.ImmutableList;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.Holder;
@@ -17,14 +18,11 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraftforge.registries.ForgeRegistries;
 import rpggods.RGEvents;
 import rpggods.RGRegistry;
-import rpggods.util.RGComponentUtils;
 import rpggods.util.DeferredHolderSet;
 
-import javax.annotation.concurrent.Immutable;
 import java.util.List;
 import java.util.Optional;
 
-@Immutable
 public class CombatStartCondition extends PerkCondition {
 
     public static final Codec<CombatStartCondition> CODEC = RecordCodecBuilder.create(instance -> instance.group(
@@ -58,16 +56,9 @@ public class CombatStartCondition extends PerkCondition {
     }
 
     @Override
-    public Component createDescription(RegistryAccess registryAccess) {
-        final HolderSet<EntityType<?>> holderSet = entityType.get(BuiltInRegistries.ENTITY_TYPE);
-        // create description when no entity is specified
-        if(holderSet.size() == 0) {
-            return Component.translatable(PREFIX + "combat_start");
-        }
-        // create description when one or more entity types are specified
-        List<Component> holderSetComponent = RGComponentUtils.createHolderSetDescription(BuiltInRegistries.ENTITY_TYPE, holderSet, EntityType::getDescription);
-        final Component delimiter = Component.translatable("favor.perk.condition.or");
-        return Component.translatable(PREFIX + "combat_start.specific", RGComponentUtils.join(holderSetComponent, delimiter));
+    public List<Component> createDescription(RegistryAccess registryAccess) {
+        // TODO combat start condition description, with support for specific entities or entity tags
+        return ImmutableList.of();
     }
 
     @Override

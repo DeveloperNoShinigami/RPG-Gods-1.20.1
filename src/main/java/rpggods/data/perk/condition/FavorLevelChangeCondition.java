@@ -6,17 +6,20 @@
 
 package rpggods.data.perk.condition;
 
+import com.google.common.collect.ImmutableList;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.advancements.critereon.MinMaxBounds;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.StringRepresentable;
 import rpggods.RGRegistry;
-import rpggods.data.deity.DeityContainer;
+import rpggods.util.RGCodecUtils;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
+import java.util.List;
 import java.util.Optional;
 
 @Immutable
@@ -56,9 +59,9 @@ public class FavorLevelChangeCondition extends PerkCondition {
     }
 
     @Override
-    public Component createDescription(final RegistryAccess registryAccess) {
-        final DeityContainer container = DeityContainer.getOrCreate(registryAccess, this.deity);
-        return Component.translatable(PREFIX + "favor_changed" + "." + levelDirection.getSerializedName(), container.getName());
+    public List<Component> createDescription(final RegistryAccess registryAccess) {
+        // TODO favor level change condition description
+        return ImmutableList.of();
     }
 
     @Override

@@ -11,7 +11,6 @@ import com.mojang.serialization.Codec;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.chat.Component;
 import rpggods.RGRegistry;
-import rpggods.util.RGComponentUtils;
 
 import javax.annotation.concurrent.Immutable;
 import java.util.ArrayList;
@@ -47,15 +46,20 @@ public class OrCondition extends PerkCondition {
     }
 
     @Override
-    public Component createDescription(final RegistryAccess registryAccess) {
-        // collect list of child descriptions
-        final List<Component> list = new ArrayList<>(children.size());
+    public List<Component> createDescription(final RegistryAccess registryAccess) {
+
+        final List<Component> builder = new ArrayList<>();
         for(PerkCondition child : children) {
-            list.add(child.createDescription(registryAccess));
+            for (Component c : child.createDescription(registryAccess)) {
+                builder.add(Component.literal("  ").append(c));
+                builder.add(Component.translatable("rpggods.perk_condition.or"));
+            }
         }
-        // join with "or" delimiter
-        final Component delimiter = Component.translatable(PREFIX + "or");
-        return RGComponentUtils.join(list, delimiter);
+        // remove trailing element
+        if(!builder.isEmpty()) {
+            builder.remove(builder.size() - 1);
+        }
+        return builder;
     }
 
     @Override

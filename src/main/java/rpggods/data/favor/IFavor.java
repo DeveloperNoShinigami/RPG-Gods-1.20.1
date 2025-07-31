@@ -164,6 +164,14 @@ public interface IFavor extends INBTSerializable<CompoundTag> {
     }
 
     /**
+     * @param key the perk category
+     * @return true if the time is greater than the timestamp+cooldown
+     */
+    default boolean hasNoPerkCooldown(final String key) {
+        return getPerkCooldownMap().getOrDefault(key, 0L) <= 0;
+    }
+
+    /**
      * Sets the cooldown for a given offering
      * @param id the offering id
      * @param cooldown the cooldown to apply
@@ -173,8 +181,8 @@ public interface IFavor extends INBTSerializable<CompoundTag> {
     }
 
     /**
-     * @param id the offering ID
-     * @return the cooldown tracker for the {@link Offering} with the given ID
+     * @param id the offering id
+     * @return the cooldown tracker for the given offering
      **/
     default Cooldown getOfferingCooldown(final ResourceLocation id) {
         return getOfferingCooldownMap().computeIfAbsent(id, r -> RPGGods.OFFERING_MAP.getOrDefault(r, Offering.EMPTY).createCooldown());
@@ -182,7 +190,7 @@ public interface IFavor extends INBTSerializable<CompoundTag> {
 
     /**
      * Sets the cooldown for a given sacrifice
-     * @param id the sacrifice ID
+     * @param id the sacrifice id
      * @param cooldown the cooldown to apply
      */
     default void setSacrificeCooldown(final ResourceLocation id, final Cooldown cooldown) {
@@ -190,8 +198,8 @@ public interface IFavor extends INBTSerializable<CompoundTag> {
     }
 
     /**
-     * @param id the sacrifice ID
-     * @return the cooldown tracker for the {@link Sacrifice} with the given ID
+     * @param id the sacrifice id
+     * @return the cooldown tracker for the given offering
      **/
     default Cooldown getSacrificeCooldown(final ResourceLocation id) {
         return getSacrificeCooldownMap().computeIfAbsent(id, r -> RPGGods.SACRIFICE_MAP.getOrDefault(r, Sacrifice.EMPTY).createCooldown());

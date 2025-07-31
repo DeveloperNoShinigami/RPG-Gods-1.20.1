@@ -6,6 +6,7 @@
 
 package rpggods.data.perk.action;
 
+import com.google.common.collect.ImmutableList;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.Holder;
@@ -24,6 +25,8 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.registries.ForgeRegistries;
 import rpggods.RGRegistry;
 import rpggods.util.DeferredHolderSet;
+
+import java.util.List;
 
 public class MerchantPriceAction extends PerkAction {
 
@@ -85,8 +88,9 @@ public class MerchantPriceAction extends PerkAction {
     }
 
     @Override
-    public Component createDescription(RegistryAccess registryAccess) {
-        return Component.translatable(PREFIX + "merchant_price" + SUFFIX, amount);
+    public List<Component> createDescription(RegistryAccess registryAccess) {
+        // TODO crop yield perk action description using min and max
+        return ImmutableList.of(Component.literal("" + amount));
     }
 
     @Override

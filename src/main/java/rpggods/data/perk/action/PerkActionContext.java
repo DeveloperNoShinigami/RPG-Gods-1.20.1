@@ -37,7 +37,7 @@ public final class PerkActionContext {
     /** The entity, if there is an entity associated with the {@link Perk} **/
     private final Optional<Entity> entity;
     /** The event that triggered the {@link Perk}, if any **/
-    private final Optional<? extends Event> event;
+    private final Optional<Event> event;
     /** The block state, if there is a block state associated with the {@link Perk} **/
     private final Optional<BlockState> blockState;
 
@@ -53,7 +53,7 @@ public final class PerkActionContext {
      **/
     public PerkActionContext(ResourceLocation deity, ServerPlayer player, IFavor favor,
                              Optional<ResourceLocation> data, Optional<Entity> entity,
-                             Optional<? extends Event> event, Optional<BlockState> blockState) {
+                             Optional<Event> event, Optional<BlockState> blockState) {
         this.deity = deity;
         this.player = player;
         this.favor = favor;
@@ -104,7 +104,7 @@ public final class PerkActionContext {
     }
 
     /** @return The event that triggered the {@link Perk}, if any **/
-    public Optional<? extends Event> getEvent() {
+    public Optional<Event> getEvent() {
         return event;
     }
 

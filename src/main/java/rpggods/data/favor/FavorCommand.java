@@ -17,7 +17,6 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.commands.arguments.ResourceLocationArgument;
-import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
@@ -135,7 +134,7 @@ public class FavorCommand {
                 builder.getSiblings().add(Component.literal("\n"));
                 builder.getSiblings().add(Component.literal(deity.getId().toString()).withStyle(ChatFormatting.WHITE));
                 builder.getSiblings().add(Component.literal(" - "));
-                builder.getSiblings().add(DeityContainer.createName(deity.getId()).withStyle(ChatFormatting.AQUA));
+                builder.getSiblings().add(DeityContainer.getName(deity.getId()).withStyle(ChatFormatting.AQUA));
                 builder.getSiblings().add(Component.literal(" - "));
                 // add enabled/disabled
                 if(deity.isEnabled()) {
@@ -145,7 +144,7 @@ public class FavorCommand {
                 }
                 // add always unlocked
                 if(deity.isUnlocked()) {
-                    builder.getSiblings().add(CommonComponents.SPACE);
+                    builder.getSiblings().add(Component.literal(" "));
                     builder.getSiblings().add(Component.translatable(commandKey + ".always_unlocked").withStyle(ChatFormatting.YELLOW));
                 }
             });
@@ -162,7 +161,7 @@ public class FavorCommand {
             throw FAVOR_DISABLED_EXCEPTION.create(player.getDisplayName());
         }
         int amount = type.favorGetter.accept(player, favor, deity, 0);
-        source.sendSuccess(() -> Component.translatable("commands.favor.query." + type.name, player.getDisplayName(), amount, DeityContainer.createName(deity)), false);
+        source.sendSuccess(() -> Component.translatable("commands.favor.query." + type.name, player.getDisplayName(), amount, DeityContainer.getName(deity)), false);
         return amount;
     }
 
@@ -178,9 +177,9 @@ public class FavorCommand {
         }
         // send command feedback
         if (players.size() == 1) {
-            source.sendSuccess(() -> Component.translatable("commands.favor.set." + type.name + ".success.single", amount, DeityContainer.createName(deity), players.iterator().next().getDisplayName()), true);
+            source.sendSuccess(() -> Component.translatable("commands.favor.set." + type.name + ".success.single", amount, DeityContainer.getName(deity), players.iterator().next().getDisplayName()), true);
         } else {
-            source.sendSuccess(() -> Component.translatable("commands.favor.set." + type.name + ".success.multiple", amount, DeityContainer.createName(deity), players.size()), true);
+            source.sendSuccess(() -> Component.translatable("commands.favor.set." + type.name + ".success.multiple", amount, DeityContainer.getName(deity), players.size()), true);
         }
 
         return players.size();
@@ -198,9 +197,9 @@ public class FavorCommand {
         }
         // send command feedback
         if (players.size() == 1) {
-            source.sendSuccess(() -> Component.translatable("commands.favor.add." + type.name + ".success.single", amount, DeityContainer.createName(deity), players.iterator().next().getDisplayName()), true);
+            source.sendSuccess(() -> Component.translatable("commands.favor.add." + type.name + ".success.single", amount, DeityContainer.getName(deity), players.iterator().next().getDisplayName()), true);
         } else {
-            source.sendSuccess(() -> Component.translatable("commands.favor.add." + type.name + ".success.multiple", amount, DeityContainer.createName(deity), players.size()), true);
+            source.sendSuccess(() -> Component.translatable("commands.favor.add." + type.name + ".success.multiple", amount, DeityContainer.getName(deity), players.size()), true);
         }
 
         return players.size();
@@ -231,7 +230,7 @@ public class FavorCommand {
         final boolean enabled = RPGGods.getFavor(player).orElse(Favor.EMPTY).getFavor(deity).isEnabled();
         // send command feedback
         final String sub = (enabled ? "enabled" : "disabled");
-        source.sendSuccess(() -> Component.translatable("commands.favor.deity.enabled." + sub, DeityContainer.createName(deity), player.getDisplayName()), true);
+        source.sendSuccess(() -> Component.translatable("commands.favor.deity.enabled." + sub, DeityContainer.getName(deity), player.getDisplayName()), true);
         return enabled ? 1 : 0;
     }
 
@@ -248,9 +247,9 @@ public class FavorCommand {
         // send command feedback
         final String sub = (enabled ? "enabled" : "disabled");
         if (players.size() == 1) {
-            source.sendSuccess(() -> Component.translatable("commands.favor.deity." + sub + ".success.single", DeityContainer.createName(deity), players.iterator().next().getDisplayName()), true);
+            source.sendSuccess(() -> Component.translatable("commands.favor.deity." + sub + ".success.single", DeityContainer.getName(deity), players.iterator().next().getDisplayName()), true);
         } else {
-            source.sendSuccess(() -> Component.translatable("commands.favor.deity." + sub + ".success.multiple", DeityContainer.createName(deity), players.size()), true);
+            source.sendSuccess(() -> Component.translatable("commands.favor.deity." + sub + ".success.multiple", DeityContainer.getName(deity), players.size()), true);
         }
         return players.size();
     }
@@ -263,7 +262,7 @@ public class FavorCommand {
         float fDecay = favor.getFavor(deity).getDecayRate();
         int decay = Math.round(fDecay * 100);
         // send command feedback
-        source.sendSuccess(() -> Component.translatable("commands.favor.query.decay", target.getDisplayName(), decay, DeityContainer.createName(deity)), true);
+        source.sendSuccess(() -> Component.translatable("commands.favor.query.decay", target.getDisplayName(), decay, DeityContainer.getName(deity)), true);
         return decay;
     }
 
@@ -280,9 +279,9 @@ public class FavorCommand {
         }
         // send command feedback
         if (players.size() == 1) {
-            source.sendSuccess(() -> Component.translatable("commands.favor.set.decay.success.single", decay, DeityContainer.createName(deity), players.iterator().next().getDisplayName()), true);
+            source.sendSuccess(() -> Component.translatable("commands.favor.set.decay.success.single", decay, DeityContainer.getName(deity), players.iterator().next().getDisplayName()), true);
         } else {
-            source.sendSuccess(() -> Component.translatable("commands.favor.set.decay.success.multiple", decay, DeityContainer.createName(deity), players.size()), true);
+            source.sendSuccess(() -> Component.translatable("commands.favor.set.decay.success.multiple", decay, DeityContainer.getName(deity), players.size()), true);
         }
         return players.size();
     }
@@ -301,9 +300,9 @@ public class FavorCommand {
         }
         // send command feedback
         if (players.size() == 1) {
-            source.sendSuccess(() -> Component.translatable("commands.favor.add.decay.success.single", decay, DeityContainer.createName(deity), players.iterator().next().getDisplayName()), true);
+            source.sendSuccess(() -> Component.translatable("commands.favor.add.decay.success.single", decay, DeityContainer.getName(deity), players.iterator().next().getDisplayName()), true);
         } else {
-            source.sendSuccess(() -> Component.translatable("commands.favor.add.decay.success.multiple", decay, DeityContainer.createName(deity), players.size()), true);
+            source.sendSuccess(() -> Component.translatable("commands.favor.add.decay.success.multiple", decay, DeityContainer.getName(deity), players.size()), true);
         }
         return players.size();
     }
@@ -316,7 +315,7 @@ public class FavorCommand {
         float fPerkBonus = favor.getFavor(deity).getPerkBonus();
         int perkBonus = Math.round(fPerkBonus * 100);
         // send command feedback
-        source.sendSuccess(() -> Component.translatable("commands.favor.query.perk_bonus", target.getDisplayName(), fPerkBonus, DeityContainer.createName(deity)), true);
+        source.sendSuccess(() -> Component.translatable("commands.favor.query.perk_bonus", target.getDisplayName(), fPerkBonus, DeityContainer.getName(deity)), true);
         return perkBonus;
     }
 
@@ -333,9 +332,9 @@ public class FavorCommand {
         }
         // send command feedback
         if (players.size() == 1) {
-            source.sendSuccess(() -> Component.translatable("commands.favor.set.perk_bonus.success.single", bonus, DeityContainer.createName(deity), players.iterator().next().getDisplayName()), true);
+            source.sendSuccess(() -> Component.translatable("commands.favor.set.perk_bonus.success.single", bonus, DeityContainer.getName(deity), players.iterator().next().getDisplayName()), true);
         } else {
-            source.sendSuccess(() -> Component.translatable("commands.favor.set.perk_bonus.success.multiple", bonus, DeityContainer.createName(deity), players.size()), true);
+            source.sendSuccess(() -> Component.translatable("commands.favor.set.perk_bonus.success.multiple", bonus, DeityContainer.getName(deity), players.size()), true);
         }
         return players.size();
     }
@@ -354,9 +353,9 @@ public class FavorCommand {
         }
         // send command feedback
         if (players.size() == 1) {
-            source.sendSuccess(() -> Component.translatable("commands.favor.add.perk_bonus.success.single", bonus, DeityContainer.createName(deity), players.iterator().next().getDisplayName()), true);
+            source.sendSuccess(() -> Component.translatable("commands.favor.add.perk_bonus.success.single", bonus, DeityContainer.getName(deity), players.iterator().next().getDisplayName()), true);
         } else {
-            source.sendSuccess(() -> Component.translatable("commands.favor.add.perk_bonus.success.multiple", bonus, DeityContainer.createName(deity), players.size()), true);
+            source.sendSuccess(() -> Component.translatable("commands.favor.add.perk_bonus.success.multiple", bonus, DeityContainer.getName(deity), players.size()), true);
         }
         return players.size();
     }
@@ -369,7 +368,7 @@ public class FavorCommand {
         Optional<ResourceLocation> deity = favor.getPatron();
         // send command feedback
         if(deity.isPresent()) {
-            source.sendSuccess(() -> Component.translatable("commands.favor.query.patron.success", target.getDisplayName(), DeityContainer.createName(deity.get())), true);
+            source.sendSuccess(() -> Component.translatable("commands.favor.query.patron.success", target.getDisplayName(), DeityContainer.getName(deity.get())), true);
             return 1;
         } else {
             source.sendSuccess(() -> Component.translatable("commands.favor.query.patron.empty", target.getDisplayName()), true);
@@ -389,9 +388,9 @@ public class FavorCommand {
         }
         // send command feedback
         if (players.size() == 1) {
-            source.sendSuccess(() -> Component.translatable("commands.favor.set.patron.success.single", DeityContainer.createName(deity), players.iterator().next().getDisplayName()), true);
+            source.sendSuccess(() -> Component.translatable("commands.favor.set.patron.success.single", DeityContainer.getName(deity), players.iterator().next().getDisplayName()), true);
         } else {
-            source.sendSuccess(() -> Component.translatable("commands.favor.set.patron.success.multiple", DeityContainer.createName(deity), players.size()), true);
+            source.sendSuccess(() -> Component.translatable("commands.favor.set.patron.success.multiple", DeityContainer.getName(deity), players.size()), true);
         }
         return players.size();
     }
@@ -426,9 +425,9 @@ public class FavorCommand {
         }
         // send command feedback
         if (players.size() == 1) {
-            source.sendSuccess(() -> Component.translatable("commands.favor.reset.deity.success.single", DeityContainer.createName(deity), players.iterator().next().getDisplayName()), true);
+            source.sendSuccess(() -> Component.translatable("commands.favor.reset.deity.success.single", DeityContainer.getName(deity), players.iterator().next().getDisplayName()), true);
         } else {
-            source.sendSuccess(() -> Component.translatable("commands.favor.reset.deity.success.multiple", DeityContainer.createName(deity), players.size()), true);
+            source.sendSuccess(() -> Component.translatable("commands.favor.reset.deity.success.multiple", DeityContainer.getName(deity), players.size()), true);
         }
 
         return players.size();
@@ -488,9 +487,9 @@ public class FavorCommand {
         }
         // send command feedback
         if (players.size() == 1) {
-            source.sendSuccess(() -> Component.translatable("commands.favor.cap." + type.name + ".success.single", actualMin, actualMax, DeityContainer.createName(deity), players.iterator().next().getDisplayName()), true);
+            source.sendSuccess(() -> Component.translatable("commands.favor.cap." + type.name + ".success.single", actualMin, actualMax, DeityContainer.getName(deity), players.iterator().next().getDisplayName()), true);
         } else {
-            source.sendSuccess(() -> Component.translatable("commands.favor.cap." + type.name + ".success.multiple", actualMin, actualMax, DeityContainer.createName(deity), players.size()), true);
+            source.sendSuccess(() -> Component.translatable("commands.favor.cap." + type.name + ".success.multiple", actualMin, actualMax, DeityContainer.getName(deity), players.size()), true);
         }
 
         return players.size();

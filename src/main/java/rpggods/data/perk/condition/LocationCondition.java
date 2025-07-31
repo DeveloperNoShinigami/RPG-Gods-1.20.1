@@ -27,12 +27,10 @@ import net.minecraft.world.level.block.CampfireBlock;
 import net.minecraft.world.level.levelgen.blockpredicates.BlockPredicate;
 import net.minecraft.world.level.levelgen.structure.Structure;
 import rpggods.RGRegistry;
-import rpggods.util.RGComponentUtils;
 import rpggods.util.RGCodecUtils;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -42,24 +40,18 @@ import java.util.function.Function;
 public class LocationCondition extends PerkCondition {
 
     public static final Codec<LocationCondition> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            DoublesPosition.CODEC.optionalFieldOf("position", DoublesPosition.ANY).forGetter(o -> o.position),
-            Vec3i.CODEC.optionalFieldOf("offset", Vec3i.ZERO).forGetter(o -> o.offset),
-            Codec.BOOL.optionalFieldOf("day").forGetter(o -> Optional.ofNullable(o.day)),
-            Codec.BOOL.optionalFieldOf("night").forGetter(o -> Optional.ofNullable(o.night)),
-            ResourceKey.codec(Registries.BIOME).optionalFieldOf("biome").forGetter(o -> Optional.ofNullable(o.biome)),
-            ResourceKey.codec(Registries.STRUCTURE).optionalFieldOf("structure").forGetter(o -> Optional.ofNullable(o.structure)),
-            ResourceKey.codec(Registries.DIMENSION).optionalFieldOf("dimension").forGetter(o -> Optional.ofNullable(o.dimension)),
-            Codec.BOOL.optionalFieldOf("smokey").forGetter(o -> Optional.ofNullable(o.smokey)),
-            RGCodecUtils.LIGHT_PREDICATE_CODEC.optionalFieldOf("light", LightPredicate.ANY).forGetter(o -> o.light),
-            BlockPredicate.CODEC.optionalFieldOf("block", BlockPredicate.alwaysTrue()).forGetter(o -> o.block)
+            DoublesPosition.CODEC.optionalFieldOf("position", DoublesPosition.ANY).forGetter(LocationCondition::getPosition),
+            Vec3i.CODEC.optionalFieldOf("offset", Vec3i.ZERO).forGetter(LocationCondition::getOffset),
+            ResourceKey.codec(Registries.BIOME).optionalFieldOf("biome").forGetter(LocationCondition::getBiome),
+            ResourceKey.codec(Registries.STRUCTURE).optionalFieldOf("structure").forGetter(LocationCondition::getStructure),
+            ResourceKey.codec(Registries.DIMENSION).optionalFieldOf("dimension").forGetter(LocationCondition::getDimension),
+            Codec.BOOL.optionalFieldOf("smokey").forGetter(LocationCondition::getSmokey),
+            RGCodecUtils.LIGHT_PREDICATE_CODEC.optionalFieldOf("light", LightPredicate.ANY).forGetter(LocationCondition::getLight),
+            BlockPredicate.CODEC.optionalFieldOf("block", BlockPredicate.alwaysTrue()).forGetter(LocationCondition::getBlock)
     ).apply(instance, LocationCondition::new));
 
     private final DoublesPosition position;
     private final Vec3i offset;
-    @Nullable
-    private final Boolean day;
-    @Nullable
-    private final Boolean night;
     @Nullable
     private final ResourceKey<Biome> biome;
     @Nullable
@@ -71,14 +63,12 @@ public class LocationCondition extends PerkCondition {
     private final LightPredicate light;
     private final BlockPredicate block;
 
-    public LocationCondition(DoublesPosition position, Vec3i offset, Optional<Boolean> day, Optional<Boolean> night,
+    public LocationCondition(DoublesPosition position, Vec3i offset,
                              Optional<ResourceKey<Biome>> biome, Optional<ResourceKey<Structure>> structure,
                              Optional<ResourceKey<Level>> dimension, Optional<Boolean> smokey,
                              LightPredicate light, BlockPredicate block) {
         this.position = position;
         this.offset = offset;
-        this.day = day.orElse(null);
-        this.night = night.orElse(null);
         this.biome = biome.orElse(null);
         this.structure = structure.orElse(null);
         this.dimension = dimension.orElse(null);
@@ -102,14 +92,6 @@ public class LocationCondition extends PerkCondition {
         if (!position.z.matches(blockpos.getZ())) {
             return false;
         }
-        // validate day
-        if(this.day != null && this.day != context.getLevel().isDay()) {
-            return false;
-        }
-        // validate night
-        if(this.night != null && this.night != context.getLevel().isNight()) {
-            return false;
-        }
         // validate dimension
         if (this.dimension != null && !this.dimension.equals(level.dimension())) {
             return false;
@@ -128,11 +110,11 @@ public class LocationCondition extends PerkCondition {
             return false;
         }
         // validate light
-        if(!light.matches(level, blockpos)) {
+        if(!getLight().matches(level, blockpos)) {
             return false;
         }
         // validate block
-        if(!block.test(level, blockpos)) {
+        if(!getBlock().test(level, blockpos)) {
             return false;
         }
         // validate smokey
@@ -149,12 +131,12 @@ public class LocationCondition extends PerkCondition {
     }
 
     @Override
-    public Component createDescription(final RegistryAccess registryAccess) {
+    public List<Component> createDescription(final RegistryAccess registryAccess) {
         // create description
-        final List<Component> builder = new ArrayList<>();
+        final ImmutableList.Builder<Component> builder = ImmutableList.builder();
         // offset
         if(!Vec3i.ZERO.equals(this.offset)) {
-            builder.add(Component.translatable(PREFIX + "location.with_offset", this.offset.getX(), this.offset.getY(), this.offset.getZ()).withStyle(ChatFormatting.ITALIC));
+            builder.add(Component.translatable("rpggods.perk_condition.location.with_offset", this.offset.getX(), this.offset.getY(), this.offset.getZ()).withStyle(ChatFormatting.ITALIC));
         }
         // position
         if(this.position != DoublesPosition.ANY) {
@@ -162,31 +144,28 @@ public class LocationCondition extends PerkCondition {
         }
         // biome
         if(this.biome != null) {
-            Component text = RGComponentUtils.createResourceKeyDescription(this.biome);
-            builder.add(Component.translatable(PREFIX + "location.biome", text));
+            Component text = createResourceKeyDescription(this.biome);
+            builder.add(Component.translatable("rpggods.perk_condition.location.biome", text));
         }
         // structure
         if(this.structure != null) {
-            Component text = RGComponentUtils.createResourceKeyDescription(this.structure);
-            builder.add(Component.translatable(PREFIX + "location.structure", text));
+            Component text = createResourceKeyDescription(this.structure);
+            builder.add(Component.translatable("rpggods.perk_condition.location.structure", text));
         }
         // dimension
         if(this.dimension != null) {
-            Component text = RGComponentUtils.createResourceKeyDescription(this.dimension);
-            builder.add(Component.translatable(PREFIX + "location.dimension", text));
+            Component text = createResourceKeyDescription(this.dimension);
+            builder.add(Component.translatable("rpggods.perk_condition.location.dimension", text));
         }
         // smokey
         if(this.smokey != null) {
-            builder.add(Component.translatable(PREFIX + "location." + (this.smokey ? "smokey" : "not_smokey")));
+            builder.add(Component.translatable("rpggods.perk_condition.location." + (this.smokey ? "smokey" : "not_smokey")));
         }
         // light
         if(this.light != LightPredicate.ANY) {
-            final Component lightBoundsComponent = RGComponentUtils.createBoundsComponent(this.light.composite.getMin(), this.light.composite.getMax());
-            builder.add(Component.translatable(PREFIX + "location.light", lightBoundsComponent));
+            builder.add(createLightDescription(this.light.composite));
         }
-        // join components
-        final Component delimiter = Component.translatable("favor.perk.condition.and");
-        return RGComponentUtils.join(builder, delimiter);
+        return builder.build();
     }
 
     private static boolean hasStructure(final RegistryAccess registryAccess, final ResourceKey<Structure> key, final Set<Structure> structures) {
@@ -202,6 +181,57 @@ public class LocationCondition extends PerkCondition {
         }
         // all checks failed
         return false;
+    }
+
+    private static Component createLightDescription(final MinMaxBounds.Ints bounds) {
+        // check range
+        if(bounds.getMin() != null && bounds.getMax() != null) {
+            return Component.translatable("rpggods.perk_condition.location.light.range", bounds.getMin(), bounds.getMax());
+        }
+        // check min only
+        if(bounds.getMin() != null) {
+            return Component.translatable("rpggods.perk_condition.location.light.min", bounds.getMin());
+        }
+        // check max only
+        if(bounds.getMax() != null) {
+            return Component.translatable("rpggods.perk_condition.location.light.max", bounds.getMax());
+        }
+        // fallback
+        return Component.empty();
+    }
+
+    //// GETTERS ////
+
+    public DoublesPosition getPosition() {
+        return position;
+    }
+
+    public Vec3i getOffset() {
+        return new Vec3i(offset.getX(), offset.getY(), offset.getZ());
+    }
+
+    public Optional<ResourceKey<Biome>> getBiome() {
+        return Optional.ofNullable(biome);
+    }
+
+    public Optional<ResourceKey<Structure>> getStructure() {
+        return Optional.ofNullable(structure);
+    }
+
+    public Optional<ResourceKey<Level>> getDimension() {
+        return Optional.ofNullable(dimension);
+    }
+
+    public Optional<Boolean> getSmokey() {
+        return Optional.ofNullable(smokey);
+    }
+
+    public LightPredicate getLight() {
+        return light;
+    }
+
+    public BlockPredicate getBlock() {
+        return block;
     }
 
     //// UTILITY CLASSES ////
@@ -258,9 +288,21 @@ public class LocationCondition extends PerkCondition {
         }
 
         private static Component createDescription(final String axis, final MinMaxBounds.Doubles bounds) {
-            final Component boundsComponent = RGComponentUtils.createBoundsComponent(bounds.getMin(), bounds.getMax());
-            final Component axisComponent = Component.translatable(PREFIX + "location.position." + axis);
-            return Component.translatable(PREFIX + "location.position", axisComponent, boundsComponent);
+            final Component axisText = Component.translatable("rpggods.perk_condition.location.position." + axis);
+            // check range
+            if(bounds.getMin() != null && bounds.getMax() != null) {
+                return Component.translatable("rpggods.perk_condition.location.position.range", axisText, bounds.getMin().longValue(), bounds.getMax().longValue());
+            }
+            // check min only
+            if(bounds.getMin() != null) {
+                return Component.translatable("rpggods.perk_condition.location.position.min", axisText, bounds.getMin().longValue());
+            }
+            // check max only
+            if(bounds.getMax() != null) {
+                return Component.translatable("rpggods.perk_condition.location.position.max", axisText, bounds.getMax().longValue());
+            }
+            // fallback
+            return Component.empty();
         }
 
         public MinMaxBounds.Doubles getX() {
