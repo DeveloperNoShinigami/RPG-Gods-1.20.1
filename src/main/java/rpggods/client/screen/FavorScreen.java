@@ -11,8 +11,8 @@ import com.google.common.collect.ImmutableMap;
 import com.mojang.blaze3d.platform.Lighting;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.math.Quaternion;
-import com.mojang.math.Vector3f;
+import com.mojang.math.Axis;
+import org.joml.Quaternionf;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
@@ -822,15 +822,15 @@ public class FavorScreen extends AbstractContainerScreen<FavorContainerMenu> {
         PoseStack posestack1 = new PoseStack();
         posestack1.translate(0.0D, 0.0D, 1000.0D);
         posestack1.scale(scale, scale, scale);
-        Quaternion quaternion = Vector3f.YP.rotationDegrees(rotX * -15.0F + 180.0F); // was 180.0F
-        Quaternion quaternion1 = Vector3f.XP.rotationDegrees(rotY * -15.0F);
-        Quaternion quaternion2 = Vector3f.ZP.rotationDegrees(180.0F);
+        Quaternionf quaternion = Axis.YP.rotationDegrees(rotX * -15.0F + 180.0F); // was 180.0F
+        Quaternionf quaternion1 = Axis.XP.rotationDegrees(rotY * -15.0F);
+        Quaternionf quaternion2 = Axis.ZP.rotationDegrees(180.0F);
         quaternion.mul(quaternion1);
         quaternion.mul(quaternion2);
         posestack1.mulPose(quaternion);
         Lighting.setupForEntityInInventory();
         EntityRenderDispatcher entityrenderdispatcher = Minecraft.getInstance().getEntityRenderDispatcher();
-        quaternion1.conj();
+        quaternion1.conjugate();
         entityrenderdispatcher.overrideCameraOrientation(quaternion1);
         entityrenderdispatcher.setRenderShadow(false);
         MultiBufferSource.BufferSource multibuffersource$buffersource = Minecraft.getInstance().renderBuffers().bufferSource();
