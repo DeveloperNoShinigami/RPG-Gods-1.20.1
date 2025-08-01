@@ -7,7 +7,7 @@
 package rpggods.client.screen;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -67,16 +67,15 @@ public class ScrollButton<T extends Screen> extends Button {
     }
 
     @Override
-    public void renderButton(PoseStack matrixStack, int mouseX, int mouseY, float partialTicks) {
+    public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
         if (this.visible) {
-            RenderSystem.setShaderTexture(0, texture);
             final boolean isEnabled = enabled.test(screen);
             final float scroll = isEnabled ? scrollAmount : 0.0F;
             final int vOffset = isEnabled ? 0 : vHeight;
             final int offset = Mth.clamp((int) (scroll * this.height - this.vHeight / 2), 1, this.height - vHeight - 1);
             final int dx = vertical ? 1 : offset;
             final int dy = vertical ? offset : 1;
-            this.blit(matrixStack, this.x + dx, this.y + dy, u, v + vOffset, uWidth, vHeight);
+            guiGraphics.blit(texture, this.getX() + dx, this.getY() + dy, u, v + vOffset, uWidth, vHeight);
         }
     }
 
