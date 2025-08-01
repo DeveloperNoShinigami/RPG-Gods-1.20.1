@@ -6,14 +6,16 @@ This document summarizes best practices for automating Minecraft mod development
 - Install a modern JDK (17 or higher) and ensure `JAVA_HOME` is configured.
 - Use Gradle for builds. The provided `gradlew` wrapper handles versioning.
 - For cross-platform mods, rely on Architectury or similar projects to share code.
+- Single-platform projects, such as Forge-only mods, commonly keep everything in one module.
 
 ## Project Structure
-- Keep platform neutral logic in the `Common` module.
-- Put Fabric specific code inside the `Fabric` module and Forge code inside the `Forge` module.
+- When targeting multiple loaders, keep platform-neutral logic in a `Common` module with separate `Fabric` and `Forge` modules.
+- For Forge-only mods, a single module with both code and resources is perfectly acceptable.
 - Resources belong under `src/main/resources` and Java sources under `src/main/java`.
 
 ## Coding Practices
 - Follow Java best practices and the repository's style conventions.
+- Standard package names typically use a reversed-domain prefix, but shorter names (as in this project's `rpggods` package and `RG*` classes) are common in Forge mods.
 - Prefer composition over inheritance for complex systems.
 - Add meaningful comments for non-trivial logic.
 - Keep feature flags or version checks platform specific.
