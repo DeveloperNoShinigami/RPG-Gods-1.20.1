@@ -387,9 +387,9 @@ public class FavorScreen extends AbstractContainerScreen<FavorContainerMenu> {
         this.font.drawShadow(guiGraphics.pose(), deityName, this.leftPos + NAME_X, this.topPos + NAME_Y, 0xFFFFFF);
         this.font.draw(guiGraphics.pose(), deityFavor, this.leftPos + FAVOR_X, this.topPos + FAVOR_Y, 0xFFFFFF);
         switch (this.page) {
-            case SUMMARY -> renderSummaryPage(guiGraphics.pose(), mouseX, mouseY, partialTicks);
-            case OFFERINGS -> renderOfferingsPage(guiGraphics.pose());
-            case SACRIFICES -> renderSacrificesPage(guiGraphics.pose());
+            case SUMMARY -> renderSummaryPage(guiGraphics, mouseX, mouseY, partialTicks);
+            case OFFERINGS -> renderOfferingsPage(guiGraphics);
+            case SACRIFICES -> renderSacrificesPage(guiGraphics);
             case PERKS -> {
                 // Perks page is rendered later
             }
@@ -470,7 +470,8 @@ public class FavorScreen extends AbstractContainerScreen<FavorContainerMenu> {
         perkMap.clear();
     }
 
-    private void renderSummaryPage(PoseStack matrixStack, int mouseX, int mouseY, float partialTicks) {
+    private void renderSummaryPage(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
+        PoseStack matrixStack = guiGraphics.pose();
         // draw title
         int startX = (this.width - this.font.width(deityTitle)) / 2;
         this.font.draw(matrixStack, deityTitle, startX, this.topPos + TITLE_Y, 0xFFFFFF);
@@ -509,13 +510,15 @@ public class FavorScreen extends AbstractContainerScreen<FavorContainerMenu> {
         drawEntityOnScreen(getOrCreateEntity(deity), matrixStack, this.leftPos + PREVIEW_X + PREVIEW_WIDTH / 2, this.topPos + PREVIEW_Y + PREVIEW_HEIGHT, (float) mouseX, (float) mouseY, partialTicks);
     }
 
-    private void renderOfferingsPage(PoseStack matrixStack) {
+    private void renderOfferingsPage(GuiGraphics guiGraphics) {
+        PoseStack matrixStack = guiGraphics.pose();
         // draw scroll background
         RenderSystem.setShaderTexture(0, SCREEN_WIDGETS);
         this.blit(matrixStack, this.leftPos + SCROLL_X, this.topPos + SCROLL_Y, 188, 0, SCROLL_WIDTH, SCROLL_HEIGHT);
     }
 
-    private void renderSacrificesPage(PoseStack matrixStack) {
+    private void renderSacrificesPage(GuiGraphics guiGraphics) {
+        PoseStack matrixStack = guiGraphics.pose();
         // draw scroll background
         RenderSystem.setShaderTexture(0, SCREEN_WIDGETS);
         this.blit(matrixStack, this.leftPos + SCROLL_X, this.topPos + SCROLL_Y, 188, 0, SCROLL_WIDTH, SCROLL_HEIGHT);
@@ -529,7 +532,7 @@ public class FavorScreen extends AbstractContainerScreen<FavorContainerMenu> {
         RenderSystem.setShaderTexture(0, SCREEN_TEXTURE);
         this.blit(matrixStack, this.leftPos + 23, this.topPos + 13, 23, 13, 208, 28);
         // draw favor level
-        renderFavorLevel(matrixStack, mouseX, mouseY, partialTicks);
+        renderFavorLevel(guiGraphics, mouseX, mouseY, partialTicks);
         // re-draw name and favor
         this.font.drawShadow(matrixStack, deityName, this.leftPos + NAME_X, this.topPos + NAME_Y, 0xFFFFFF);
         this.font.draw(matrixStack, deityFavor, this.leftPos + FAVOR_X, this.topPos + FAVOR_Y, 0xFFFFFF);
@@ -545,13 +548,14 @@ public class FavorScreen extends AbstractContainerScreen<FavorContainerMenu> {
         matrixStack.translate(0, 0, 50);
         for (PerkButton b : perkButtonMap.computeIfAbsent(deity, key -> ImmutableList.of())) {
             if (b.visible && b.isHoveredOrFocused()) {
-                b.renderPerkTooltip(matrixStack, mouseX, mouseY);
+                b.renderPerkTooltip(guiGraphics, mouseX, mouseY);
             }
         }
         matrixStack.popPose();
     }
 
-    private void renderFavorLevel(PoseStack matrixStack, int mouseX, int mouseY, float partialTicks) {
+    private void renderFavorLevel(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
+        PoseStack matrixStack = guiGraphics.pose();
         // draw favor boundary
         int level = getMenu().getFavor().getFavor(deity).getLevel();
         matrixStack.pushPose();
@@ -842,8 +846,9 @@ public class FavorScreen extends AbstractContainerScreen<FavorContainerMenu> {
      * @param sizeX       the width of the scroll
      * @param sizeY       the height of the scroll
      */
-    private void renderPerkTooltipBackground(PoseStack matrixStack, final float startX, final float startY,
+    private void renderPerkTooltipBackground(GuiGraphics guiGraphics, final float startX, final float startY,
                                              float sizeX, float sizeY) {
+        PoseStack matrixStack = guiGraphics.pose();
         // minimum size of tooltip
         sizeX = Math.max(42, sizeX);
         sizeY = Math.max(50, sizeY);
@@ -900,7 +905,8 @@ public class FavorScreen extends AbstractContainerScreen<FavorContainerMenu> {
         matrixStack.popPose();
     }
 
-    private void renderStrikethrough(final PoseStack matrixStack, final int x, final int y, final int width) {
+    private void renderStrikethrough(final GuiGraphics guiGraphics, final int x, final int y, final int width) {
+        PoseStack matrixStack = guiGraphics.pose();
         matrixStack.pushPose();
         float scale = (float) width / 18.0F;
         matrixStack.scale(scale, 1, 1);
@@ -1064,7 +1070,8 @@ public class FavorScreen extends AbstractContainerScreen<FavorContainerMenu> {
                             || this.y < FavorScreen.this.topPos + PERK_BOUNDS_Y - this.height);
         }
 
-        public void renderPerkTooltip(PoseStack matrixStack, final int mouseX, final int mouseY) {
+        public void renderPerkTooltip(GuiGraphics guiGraphics, final int mouseX, final int mouseY) {
+            PoseStack matrixStack = guiGraphics.pose();
             int margin = 14;
             // determine start coordinates
             int startX = mouseX + 10;
@@ -1078,7 +1085,7 @@ public class FavorScreen extends AbstractContainerScreen<FavorContainerMenu> {
             if (perkChance.equals(Component.empty())) {
                 lines--;
             }
-            renderPerkTooltipBackground(matrixStack, startX, startY, tooltipWidth + margin, lines * lineHeight + 6);
+            renderPerkTooltipBackground(guiGraphics, startX, startY, tooltipWidth + margin, lines * lineHeight + 6);
             startX += margin / 2;
             startY += 14;
             // draw perk data
@@ -1168,7 +1175,7 @@ public class FavorScreen extends AbstractContainerScreen<FavorContainerMenu> {
                 // draw strikethrough
                 long timeElapsed = inventory.player.level.getGameTime() - openTimestamp;
                 if (this.cooldown - timeElapsed > 1) {
-                    FavorScreen.this.renderStrikethrough(matrixStack, this.x, this.y + this.height / 2, this.width - 2);
+                    FavorScreen.this.renderStrikethrough(guiGraphics, this.x, this.y + this.height / 2, this.width - 2);
                 }
             }
         }
@@ -1275,7 +1282,7 @@ public class FavorScreen extends AbstractContainerScreen<FavorContainerMenu> {
                 // draw strikethrough
                 long timeElapsed = inventory.player.level.getGameTime() - openTimestamp;
                 if (!levelRange || this.cooldown - timeElapsed > 1) {
-                    FavorScreen.this.renderStrikethrough(matrixStack, this.x, this.y + this.height / 2, this.width - 4);
+                    FavorScreen.this.renderStrikethrough(guiGraphics, this.x, this.y + this.height / 2, this.width - 4);
                 }
             }
         }
@@ -1400,7 +1407,7 @@ public class FavorScreen extends AbstractContainerScreen<FavorContainerMenu> {
                 // draw strikethrough
                 long timeElapsed = inventory.player.level.getGameTime() - openTimestamp;
                 if (this.cooldown - timeElapsed > 1) {
-                    FavorScreen.this.renderStrikethrough(matrixStack, this.x, this.y + this.height / 2, this.width - 2);
+                    FavorScreen.this.renderStrikethrough(guiGraphics, this.x, this.y + this.height / 2, this.width - 2);
                 }
             }
         }
