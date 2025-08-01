@@ -15,6 +15,7 @@ import com.mojang.math.Axis;
 import org.joml.Quaternionf;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.Screen;
@@ -379,46 +380,33 @@ public class FavorScreen extends AbstractContainerScreen<FavorContainerMenu> {
     }
 
     @Override
-    protected void renderBg(PoseStack matrixStack, float partialTicks, int x, int y) {
+    protected void renderBg(GuiGraphics guiGraphics, float partialTicks, int mouseX, int mouseY) {
+        this.renderBackground(guiGraphics);
+        RenderSystem.setShaderTexture(0, SCREEN_TEXTURE);
+        guiGraphics.blit(SCREEN_TEXTURE, this.leftPos, this.topPos, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+        this.font.drawShadow(guiGraphics.pose(), deityName, this.leftPos + NAME_X, this.topPos + NAME_Y, 0xFFFFFF);
+        this.font.draw(guiGraphics.pose(), deityFavor, this.leftPos + FAVOR_X, this.topPos + FAVOR_Y, 0xFFFFFF);
+        switch (this.page) {
+            case SUMMARY -> renderSummaryPage(guiGraphics.pose(), mouseX, mouseY, partialTicks);
+            case OFFERINGS -> renderOfferingsPage(guiGraphics.pose());
+            case SACRIFICES -> renderSacrificesPage(guiGraphics.pose());
+            case PERKS -> {
+                // Perks page is rendered later
+            }
+        }
     }
 
     @Override
-    public void render(PoseStack matrixStack, int mouseX, int mouseY, float partialTicks) {
-        this.renderBackground(matrixStack);
-        // draw background image
-        RenderSystem.setShaderTexture(0, SCREEN_TEXTURE);
-        this.blit(matrixStack, this.leftPos, this.topPos, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
-        // draw name
-        this.font.drawShadow(matrixStack, deityName, this.leftPos + NAME_X, this.topPos + NAME_Y, 0xFFFFFF);
-        // draw favor
-        this.font.draw(matrixStack, deityFavor, this.leftPos + FAVOR_X, this.topPos + FAVOR_Y, 0xFFFFFF);
-        // render page-specific items
-        switch (this.page) {
-            case SUMMARY:
-                renderSummaryPage(matrixStack, mouseX, mouseY, partialTicks);
-                break;
-            case OFFERINGS:
-                renderOfferingsPage(matrixStack);
-                break;
-            case SACRIFICES:
-                renderSacrificesPage(matrixStack);
-                break;
-            case PERKS:
-                // Perks page is rendered later
-                break;
-        }
-        // draw widgets
-        super.render(matrixStack, mouseX, mouseY, partialTicks);
-        // draw perk page UI elements AFTER widgets and on top of everything
+    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
+        super.render(guiGraphics, mouseX, mouseY, partialTicks);
         if (this.page == Page.PERKS) {
-            renderPerksPage(matrixStack, mouseX, mouseY, partialTicks);
+            renderPerksPage(guiGraphics, mouseX, mouseY, partialTicks);
         }
-        // draw hovering text LAST
         for (GuiEventListener w : this.children()) {
             if (w instanceof Button b && b.visible && b.isHoveredOrFocused()) {
-                matrixStack.pushPose();
-                b.renderToolTip(matrixStack, mouseX, mouseY);
-                matrixStack.popPose();
+                guiGraphics.pose().pushPose();
+                b.renderToolTip(guiGraphics, mouseX, mouseY);
+                guiGraphics.pose().popPose();
             }
         }
     }
@@ -533,7 +521,8 @@ public class FavorScreen extends AbstractContainerScreen<FavorContainerMenu> {
         this.blit(matrixStack, this.leftPos + SCROLL_X, this.topPos + SCROLL_Y, 188, 0, SCROLL_WIDTH, SCROLL_HEIGHT);
     }
 
-    private void renderPerksPage(PoseStack matrixStack, int mouseX, int mouseY, float partialTicks) {
+    private void renderPerksPage(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
+        PoseStack matrixStack = guiGraphics.pose();
         matrixStack.pushPose();
         matrixStack.translate(0, 0, 250);
         // draw header frame
@@ -546,7 +535,7 @@ public class FavorScreen extends AbstractContainerScreen<FavorContainerMenu> {
         this.font.draw(matrixStack, deityFavor, this.leftPos + FAVOR_X, this.topPos + FAVOR_Y, 0xFFFFFF);
         // re-draw level buttons
         for (TextButton b : perkLevelButtonMap.values()) {
-            b.renderButton(matrixStack, mouseX, mouseY, partialTicks);
+            b.renderWidget(guiGraphics, mouseX, mouseY, partialTicks);
         }
         // draw side frames
         RenderSystem.setShaderTexture(0, SCREEN_TEXTURE);
@@ -973,7 +962,8 @@ public class FavorScreen extends AbstractContainerScreen<FavorContainerMenu> {
         }
 
         @Override
-        public void renderButton(PoseStack matrixStack, int mouseX, int mouseY, float partialTicks) {
+        public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
+            PoseStack matrixStack = guiGraphics.pose();
             if (this.visible && this.enabled && perk != null) {
                 int blitY = 196;
                 if (perk.getIcon().isFancy()) {
@@ -982,10 +972,10 @@ public class FavorScreen extends AbstractContainerScreen<FavorContainerMenu> {
                 // draw color
                 RenderSystem.setShaderColor(perk.getIcon().getColorRed(), perk.getIcon().getColorGreen(), perk.getIcon().getColorBlue(), 1.0F);
                 RenderSystem.setShaderTexture(0, SCREEN_WIDGETS);
-                this.blit(matrixStack, this.x, this.y, 0, blitY, PERK_WIDTH, PERK_HEIGHT);
+                guiGraphics.blit(SCREEN_WIDGETS, this.x, this.y, 0, blitY, PERK_WIDTH, PERK_HEIGHT);
                 // draw bg
                 RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-                this.blit(matrixStack, this.x, this.y, 22, blitY, PERK_WIDTH, PERK_HEIGHT);
+                guiGraphics.blit(SCREEN_WIDGETS, this.x, this.y, 22, blitY, PERK_WIDTH, PERK_HEIGHT);
                 // draw item
                 FavorScreen.this.itemRenderer.renderGuiItem(perk.getIcon().getItem(), this.x + (PERK_WIDTH - 16) / 2, this.y + (PERK_HEIGHT - 16) / 2);
                 // draw cooldown
@@ -1001,7 +991,7 @@ public class FavorScreen extends AbstractContainerScreen<FavorContainerMenu> {
                     RenderSystem.enableBlend();
                     RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 0.5F);
                     RenderSystem.setShaderTexture(0, SCREEN_WIDGETS);
-                    this.blit(matrixStack, this.x, this.y + vOffset, 44, blitY + vOffset, PERK_WIDTH, PERK_HEIGHT - vOffset);
+                    guiGraphics.blit(SCREEN_WIDGETS, this.x, this.y + vOffset, 44, blitY + vOffset, PERK_WIDTH, PERK_HEIGHT - vOffset);
                     RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
                     RenderSystem.disableBlend();
                     matrixStack.popPose();
@@ -1153,7 +1143,8 @@ public class FavorScreen extends AbstractContainerScreen<FavorContainerMenu> {
         }
 
         @Override
-        public void renderButton(PoseStack matrixStack, int mouseX, int mouseY, float partialTicks) {
+        public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
+            PoseStack matrixStack = guiGraphics.pose();
             if (this.visible && offering != null) {
                 // draw item
                 FavorScreen.this.itemRenderer.renderGuiItem(offering.getAccept(), this.x, this.y);
@@ -1173,7 +1164,7 @@ public class FavorScreen extends AbstractContainerScreen<FavorContainerMenu> {
                 FavorScreen.this.font.draw(matrixStack, unlockText, this.x + 18 * 2 + ARROW_WIDTH + 4, this.y + textY, 0xFFFFFF);
                 // draw arrow
                 RenderSystem.setShaderTexture(0, SCREEN_WIDGETS);
-                this.blit(matrixStack, this.x + 18, this.y + textY, 113, 130, ARROW_WIDTH, ARROW_HEIGHT);
+                guiGraphics.blit(SCREEN_WIDGETS, this.x + 18, this.y + textY, 113, 130, ARROW_WIDTH, ARROW_HEIGHT);
                 // draw strikethrough
                 long timeElapsed = inventory.player.level.getGameTime() - openTimestamp;
                 if (this.cooldown - timeElapsed > 1) {
@@ -1269,7 +1260,8 @@ public class FavorScreen extends AbstractContainerScreen<FavorContainerMenu> {
         }
 
         @Override
-        public void renderButton(PoseStack matrixStack, int mouseX, int mouseY, float partialTicks) {
+        public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
+            PoseStack matrixStack = guiGraphics.pose();
             if (this.visible && offering != null) {
                 // draw item
                 FavorScreen.this.itemRenderer.renderGuiItem(offering.getAccept(), this.x, this.y);
@@ -1390,7 +1382,8 @@ public class FavorScreen extends AbstractContainerScreen<FavorContainerMenu> {
         }
 
         @Override
-        public void renderButton(PoseStack matrixStack, int mouseX, int mouseY, float partialTicks) {
+        public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
+            PoseStack matrixStack = guiGraphics.pose();
             if (this.visible && sacrifice != null) {
                 // draw entity text
                 FavorScreen.this.font.draw(matrixStack, entityText, this.x, this.y, 0xFFFFFF);
@@ -1485,10 +1478,9 @@ public class FavorScreen extends AbstractContainerScreen<FavorContainerMenu> {
         }
 
         @Override
-        public void renderButton(PoseStack matrixStack, int mouseX, int mouseY, float partialTicks) {
+        public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
             if (this.visible && this.enabled) {
-                // draw text
-                FavorScreen.this.font.draw(matrixStack, getMessage(), this.x, this.y, 0xFFFFFF);
+                FavorScreen.this.font.draw(guiGraphics.pose(), getMessage(), this.x, this.y, 0xFFFFFF);
             }
         }
 
@@ -1518,17 +1510,15 @@ public class FavorScreen extends AbstractContainerScreen<FavorContainerMenu> {
         }
 
         @Override
-        public void renderButton(PoseStack matrixStack, int mouseX, int mouseY, float partialTicks) {
+        public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
             if (this.visible) {
                 final boolean selected = FavorScreen.this.tab == id && FavorScreen.this.deity.equals(this.deity);
                 int dY = selected ? 0 : 4;
                 final int u = (id % TAB_COUNT) * TAB_WIDTH;
                 final int v = selected ? this.height : dY;
-                // draw button background
                 RenderSystem.setShaderTexture(0, SCREEN_WIDGETS);
-                this.blit(matrixStack, this.x, this.y, u, v, this.width, this.height - dY);
-                // draw item
-                FavorScreen.this.itemRenderer.renderGuiItem(item, this.x + (this.width - 16) / 2, this.y + (this.height - 16) / 2);
+                guiGraphics.blit(SCREEN_WIDGETS, this.getX(), this.getY(), u, v, this.width, this.height - dY);
+                FavorScreen.this.itemRenderer.renderGuiItem(item, this.getX() + (this.width - 16) / 2, this.getY() + (this.height - 16) / 2);
             }
         }
 
@@ -1556,13 +1546,12 @@ public class FavorScreen extends AbstractContainerScreen<FavorContainerMenu> {
         }
 
         @Override
-        public void renderButton(PoseStack matrixStack, int mouseX, int mouseY, float partialTicks) {
+        public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
             if (this.visible) {
                 final int u = left ? ARROW_WIDTH : 0;
                 final int v = 130 + (isHoveredOrFocused() ? this.height : 0);
-                // draw button
                 RenderSystem.setShaderTexture(0, SCREEN_WIDGETS);
-                this.blit(matrixStack, this.x, this.y, u, v, this.width, this.height);
+                guiGraphics.blit(SCREEN_WIDGETS, this.getX(), this.getY(), u, v, this.width, this.height);
             }
         }
 
@@ -1584,17 +1573,15 @@ public class FavorScreen extends AbstractContainerScreen<FavorContainerMenu> {
         }
 
         @Override
-        public void renderButton(PoseStack matrixStack, int mouseX, int mouseY, float partialTicks) {
+        public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
             if (this.visible) {
                 final boolean selected = FavorScreen.this.page == this.page;
                 int dY = selected ? 0 : -4;
                 int uX = (page.ordinal() % PAGE_COUNT) * PAGE_WIDTH;
                 int vY = 64 + (selected ? this.height : 0);
                 RenderSystem.setShaderTexture(0, SCREEN_WIDGETS);
-                // draw tab
-                this.blit(matrixStack, this.x, this.y - dY, uX, vY, this.width, this.height + dY);
-                // draw icon
-                this.blit(matrixStack, this.x + (this.width - 18) / 2, this.y + dY + 2 + (this.height - 18) / 2, u, v, 18, 18);
+                guiGraphics.blit(SCREEN_WIDGETS, this.getX(), this.getY() - dY, uX, vY, this.width, this.height + dY);
+                guiGraphics.blit(SCREEN_WIDGETS, this.getX() + (this.width - 18) / 2, this.getY() + dY + 2 + (this.height - 18) / 2, u, v, 18, 18);
             }
         }
     }
